@@ -1,12 +1,5 @@
-// Supabase Client Instantiation (Corrected URL with ending 't')
-const SUPABASE_URL = "https://iehpaycqvixqtonvcxst.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllaHBheWNxdml4cXRvbnZjeHN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDYwNTcsImV4cCI6MjA5NjU4MjA1N30.A4KPXJZMB83mfznqlXlHA8KU17kSc8tepmZAquYAGQ8";
-const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
-
-// Global Alert Notification System
 function showAlert(type, icon, message, duration = 3500) {
     const container = document.getElementById('alert-container');
-    if (!container) return;
     const el = document.createElement('div');
     el.className = `custom-alert alert-${type}`;
     el.innerHTML = `<span class="alert-icon">${icon}</span><span class="alert-text">${message}</span><button class="alert-close" onclick="dismissAlert(this.parentElement)">×</button>`;
@@ -26,52 +19,64 @@ function dismissAlert(el) {
 function renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal) {
     const gridContainer = document.querySelector(".product-grid");
     if (!gridContainer) return;
-    gridContainer.innerHTML = ""; // Clear grid completely to ensure uniform redraw
 
     catalogProducts.forEach(prod => {
-        const cardHTML = `
-            <div class="product-card" data-id="${prod.id}" data-name="${prod.name}" data-price="${prod.discountPrice ? prod.discountPrice : prod.price} EGP" data-type="${prod.type}" data-img="${prod.img}">
-                <div class="product-img-wrapper">
-                    <img src="${prod.img}" alt="${prod.name}">
+        // Check if this product card already exists in your HTML layout to prevent duplicates
+        const existingCard = gridContainer.querySelector(`.product-card[data-id="${prod.id}"]`);
+        
+        if (!existingCard) {
+            // If it doesn't exist, append it cleanly to the end of the grid
+            const cardHTML = `
+                <div class="product-card reveal" data-id="${prod.id}" data-name="${prod.name}" data-price="${prod.discountPrice ? prod.discountPrice : prod.price} EGP" data-type="${prod.type}" data-img="${prod.img}">
+                    <div class="product-img-wrapper">
+                        <img src="${prod.img}" alt="${prod.name}">
+                    </div>
+                    <div class="product-info">
+                        <h3>${prod.name}</h3>
+                        <p class="price" id="store-price-${prod.id}">
+                            ${prod.discountPrice ? `<span style="text-decoration: line-through; opacity: 0.5; font-size: 0.85rem; margin-right: 5px;">${prod.price} EGP</span> ${prod.discountPrice} EGP` : `${prod.price} EGP`}
+                        </p>
+                        <button class="btn view-btn">View Item</button>
+                    </div>
                 </div>
-                <div class="product-info">
-                    <h3>${prod.name}</h3>
-                    <p class="price" id="store-price-${prod.id}">
-                        ${prod.discountPrice ? `<span style="text-decoration: line-through; opacity: 0.5; font-size: 0.85rem; margin-right: 5px;">${prod.price} EGP</span> ${prod.discountPrice} EGP` : `${prod.price} EGP`}
-                    </p>
-                    <button class="btn view-btn">View Details</button>
-                </div>
-            </div>
-        `;
-        gridContainer.insertAdjacentHTML("beforeend", cardHTML);
+            `;
+            gridContainer.insertAdjacentHTML("beforeend", cardHTML);
+        } else if (prod.discountPrice) {
+            // If it exists but has an active discount applied, update its price display dynamically
+            const displayPriceTag = document.getElementById(`store-price-${prod.id}`);
+            if (displayPriceTag) {
+                displayPriceTag.innerHTML = `<span style="text-decoration: line-through; opacity: 0.5; font-size: 0.85rem; margin-right: 5px;">${prod.price} EGP</span> ${prod.discountPrice} EGP`;
+            }
+        }
     });
 
     // Re-attach view button listeners globally
     document.querySelectorAll(".product-grid .product-card .view-btn").forEach(button => {
+        button.removeEventListener("click", handleViewItemClick);
         button.addEventListener("click", handleViewItemClick);
     });
 }
 
 function handleViewItemClick(e) {
     const card = e.currentTarget.closest(".product-card");
+    // Fires global modal binding sequence handled inside DOMContentLoaded
     window.triggerModalBinding(card);
 }
+
 
 // 2. MAIN APP INITIALIZATION PIPELINE
 document.addEventListener("DOMContentLoaded", () => {
     const backToTopBtn = document.getElementById("backToTopBtn");
-    if (backToTopBtn) {
-        window.addEventListener("scroll", () => {
-            if (window.scrollY > 300) {
-                backToTopBtn.classList.add("visible");
-            } else {
-                backToTopBtn.classList.remove("visible");
-            }
-        });
-    }
+    window.addEventListener("scroll", () => {
+        if (window.scrollY > 300) {
+            backToTopBtn.classList.add("visible");
+        } else {
+            backToTopBtn.classList.remove("visible");
+        }
+    });
 
-    // --- DEFAULT MASTER DATA (FALLBACK) ---
-    const defaultInventory = {
+    // --- OWNER'S MASTER VARIANT INVENTORY ---
+    const ownerInventory = {
         "1_XS": 5, "1_S": 10, "1_M": 15, "1_L": 12, "1_XL": 8,
         "2_XS_Black": 5, "2_S_Black": 8, "2_M_Black": 0, "2_L_Black": 10, "2_XL_Black": 4,
         "2_XS_White": 3, "2_S_White": 0, "2_M_White": 12, "2_L_White": 7, "2_XL_White": 6,
@@ -79,7 +84,8 @@ document.addEventListener("DOMContentLoaded", () => {
         "4_30": 3, "4_32": 5, "4_34": 0, "4_36": 4, "4_38": 2
     };
 
-    const defaultCatalog = [
+    // PERSISTENT CATALOG DATABASE DATABASE ARRAY (Checks localStorage first)
+    let catalogProducts = JSON.parse(localStorage.getItem("ko_catalog")) || [
         { id: "1", name: "Polo T-Shirt", price: 650, type: "shirt", img: "po.png" },
         { id: "2", name: "Oversized T-Shirt", price: 650, type: "shirt", img: "ovwhite.jpg" },
         { id: "3", name: "Purple Flared Jeans", price: 950, type: "jeans", img: "fla.jfif" },
@@ -89,160 +95,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const sizesConfig = {
         shirt: ['XS', 'S', 'M', 'L', 'XL'],
         jeans: ['30', '32', '34', '36', '38']
-    };
-
-    // --- DUAL PERSISTENCE STATE LOADING ---
-    let catalogProducts = [];
-    let ownerInventory = {};
-    let usingSupabaseDb = false;
-    let currentUserSession = null; // Track current authenticated user state locally
-
-    // Load Catalog & Inventory
-    const initializeDatabaseState = async () => {
-        try {
-            if (supabase) {
-                // Try fetching catalog products from Supabase
-                const { data: dbProducts, error: prodError } = await supabase.from('products').select('*');
-                
-                if (!prodError && dbProducts && dbProducts.length > 0) {
-                    catalogProducts = dbProducts.map(p => ({
-                        id: p.id,
-                        name: p.name,
-                        price: Number(p.price),
-                        type: p.type,
-                        img: p.img,
-                        discountPrice: p.discount_price ? Number(p.discount_price) : undefined
-                    }));
-                    usingSupabaseDb = true;
-                    console.log("Supabase: Catalog loaded successfully.");
-                } else {
-                    throw new Error(prodError?.message || "Products database table is empty.");
-                }
-
-                // Try fetching variant stock inventory from Supabase
-                const { data: dbInventory, error: invError } = await supabase.from('inventory').select('*');
-                if (!invError && dbInventory && dbInventory.length > 0) {
-                    dbInventory.forEach(item => {
-                        ownerInventory[item.variant_key] = item.quantity;
-                    });
-                    console.log("Supabase: Inventory loaded successfully.");
-                } else {
-                    throw new Error(invError?.message || "Inventory database table is empty.");
-                }
-            } else {
-                throw new Error("Supabase client is not available.");
-            }
-        } catch (err) {
-            console.warn("Supabase load failed. Falling back to LocalStorage.", err.message);
-            usingSupabaseDb = false;
-            
-            // LocalStorage fallback loading
-            catalogProducts = JSON.parse(localStorage.getItem("ko_catalog")) || defaultCatalog;
-            ownerInventory = JSON.parse(localStorage.getItem("ko_inventory")) || defaultInventory;
-            
-            // Seed localStorage if not existing
-            if (!localStorage.getItem("ko_catalog")) localStorage.setItem("ko_catalog", JSON.stringify(defaultCatalog));
-            if (!localStorage.getItem("ko_inventory")) localStorage.setItem("ko_inventory", JSON.stringify(defaultInventory));
-        }
-
-        // Trigger storefront rendering once state is ready
-        renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
-        syncCatalogUIElements();
-        syncAdminSizeOptions();
-        revealCards();
-    };
-
-    // --- State mutation helpers that handle both Supabase and LocalStorage ---
-    const updateVariantInventory = async (key, delta, setQuantity = null) => {
-        let currentQty = ownerInventory[key] !== undefined ? ownerInventory[key] : 0;
-        let newQty = setQuantity !== null ? setQuantity : Math.max(0, currentQty + delta);
-        ownerInventory[key] = newQty;
-
-        // Save local
-        localStorage.setItem("ko_inventory", JSON.stringify(ownerInventory));
-
-        // Save to Supabase
-        if (usingSupabaseDb && supabase) {
-            try {
-                const { error } = await supabase
-                    .from('inventory')
-                    .upsert({ variant_key: key, quantity: newQty }, { onConflict: 'variant_key' });
-                if (error) console.error("Supabase upsert inventory error:", error.message);
-            } catch (err) {
-                console.error("Supabase connection write error:", err);
-            }
-        }
-    };
-
-    const saveCatalogToDb = async (newProduct) => {
-        catalogProducts.push(newProduct);
-        localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
-
-        if (usingSupabaseDb && supabase) {
-            try {
-                const { error } = await supabase.from('products').insert({
-                    id: newProduct.id,
-                    name: newProduct.name,
-                    price: newProduct.price,
-                    type: newProduct.type,
-                    img: newProduct.img
-                });
-                if (error) console.error("Supabase product insert error:", error.message);
-            } catch (err) {
-                console.error("Supabase product connection error:", err);
-            }
-        }
-    };
-
-    const deleteProductFromDb = async (id) => {
-        catalogProducts = catalogProducts.filter(p => p.id !== id);
-        localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
-
-        // Clean inventory local
-        for (let key in ownerInventory) {
-            if (key.startsWith(id + "_")) {
-                delete ownerInventory[key];
-            }
-        }
-        localStorage.setItem("ko_inventory", JSON.stringify(ownerInventory));
-
-        if (usingSupabaseDb && supabase) {
-            try {
-                // Delete product
-                const { error: pErr } = await supabase.from('products').delete().eq('id', id);
-                if (pErr) console.error("Supabase delete product error:", pErr.message);
-
-                // Delete matching inventory rows
-                const { error: iErr } = await supabase.from('inventory').delete().like('variant_key', `${id}\_%`);
-                if (iErr) console.error("Supabase delete inventory rows error:", iErr.message);
-            } catch (err) {
-                console.error("Supabase delete connection error:", err);
-            }
-        }
-    };
-
-    const updateProductDiscountInDb = async (id, discountPrice) => {
-        const product = catalogProducts.find(p => p.id === id);
-        if (!product) return;
-
-        if (discountPrice) {
-            product.discountPrice = discountPrice;
-        } else {
-            delete product.discountPrice;
-        }
-        localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
-
-        if (usingSupabaseDb && supabase) {
-            try {
-                const { error } = await supabase
-                    .from('products')
-                    .update({ discount_price: discountPrice || null })
-                    .eq('id', id);
-                if (error) console.error("Supabase update discount error:", error.message);
-            } catch (err) {
-                console.error("Supabase connection error:", err);
-            }
-        }
     };
 
     let cart = [];
@@ -256,6 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const modalImg = document.getElementById("modalImg");
     const modalName = document.getElementById("modalName");
     const modalPrice = document.getElementById("modalPrice");
+    const sizeSelect = document.getElementById("sizeSelect");
     const orderBtn = document.getElementById("orderBtn");
     const colorSection = document.getElementById("modalColorSection");
     const colorDots = document.querySelectorAll(".color-dot");
@@ -293,22 +146,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
     window.addEventListener("scroll", revealCards);
-
-    cartIcon.addEventListener("click", () => {
-        // Enforce user login to open cart sidebar
-        if (!currentUserSession) {
-            showAlert('error', '✕', 'Please sign in or register to view your cart!');
-            openAuthModal();
-            return;
-        }
-        cartSidebar.classList.add("open");
-    });
+// --- Safe Cart Toggle Animations ---
+   
+    cartIcon.addEventListener("click", () => cartSidebar.classList.add("open"));
     closeCartBtn.addEventListener("click", () => cartSidebar.classList.remove("open"));
 
     // --- Dynamic Stock Verifier ---
     const checkCurrentVariantStock = () => {
-        const activePill = document.querySelector("#sizeSelector .size-pill.active");
-        const size = activePill ? activePill.getAttribute("data-size") : "";
+        const size = sizeSelect.value;
         let variantKey = `${currentActiveProductId}_${size}`;
         if (colorSection.style.display === "block" && selectedColor) {
             variantKey += `_${selectedColor}`;
@@ -322,32 +167,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (maxAvailable <= 0 || qtyInCart >= maxAvailable) {
             orderBtn.textContent = "Out of Stock";
-            orderBtn.style.backgroundColor = "#222";
-            orderBtn.style.borderColor = "#222";
-            orderBtn.style.color = "#555";
+            orderBtn.style.backgroundColor = "#333";
+            orderBtn.style.color = "#888";
             orderBtn.style.cursor = "not-allowed";
             orderBtn.disabled = true;
         } else {
             orderBtn.textContent = "Add To Cart";
             orderBtn.style.backgroundColor = ""; 
-            orderBtn.style.borderColor = "";
             orderBtn.style.color = "";
             orderBtn.style.cursor = "pointer";
             orderBtn.disabled = false;
         }
     };
 
+    sizeSelect.addEventListener("change", checkCurrentVariantStock);
+
     colorDots.forEach(dot => {
         dot.addEventListener("click", () => {
             colorDots.forEach(d => d.classList.remove("active"));
             dot.classList.add("active");
             selectedColor = dot.getAttribute("data-color");
-            if (modalName.textContent === "Oversized T-Shirt") {
-                if (selectedColor === "Black") {
-                    modalImg.setAttribute("src", "ovblack.jpg");
-                } else {
-                    modalImg.setAttribute("src", "ovwhite.jpg");
-                }
+            if(modalName.textContent === "Oversized T-Shirt") {
+                modalImg.setAttribute("src", `over.jpg`);
             }
             checkCurrentVariantStock();
         });
@@ -377,29 +218,20 @@ document.addEventListener("DOMContentLoaded", () => {
             selectedColor = ""; 
         }
 
-        const sizeSelectorEl = document.getElementById("sizeSelector");
-        if (sizeSelectorEl) {
-            sizeSelectorEl.innerHTML = "";
-            const sizes = sizesConfig[currentProductType] || [];
-            sizes.forEach((size, index) => {
-                const pill = document.createElement("button");
-                pill.type = "button";
-                pill.className = "size-pill" + (index === 0 ? " active" : "");
-                pill.textContent = size;
-                pill.setAttribute("data-size", size);
-                pill.addEventListener("click", () => {
-                    sizeSelectorEl.querySelectorAll(".size-pill").forEach(p => p.classList.remove("active"));
-                    pill.classList.add("active");
-                    checkCurrentVariantStock();
-                });
-                sizeSelectorEl.appendChild(pill);
-            });
-        }
+        sizeSelect.innerHTML = "";
+        const sizes = sizesConfig[currentProductType] || [];
+        sizes.forEach(size => {
+            const option = document.createElement("option");
+            option.value = size;
+            option.textContent = size;
+            sizeSelect.appendChild(option);
+        });
 
         checkCurrentVariantStock();
         modal.style.display = "flex";
     };
 
+    // Expose binding safely onto global window scope for helper functions
     window.triggerModalBinding = bindProductToModal;
 
     const closeModal = () => { modal.style.display = "none"; };
@@ -408,19 +240,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Add to Cart Action ---
     orderBtn.addEventListener("click", () => {
-        // Enforce user login to add items to cart
-        if (!currentUserSession) {
-            showAlert('error', '✕', 'Please login or create an account to place orders!');
-            closeModal();
-            openAuthModal();
-            return;
-        }
-
         const name = modalName.textContent;
         const rawPrice = modalPrice.textContent;
         const img = modalImg.getAttribute("src");
-        const activePill = document.querySelector("#sizeSelector .size-pill.active");
-        const size = activePill ? activePill.getAttribute("data-size") : "";
+        const size = sizeSelect.value;
         const color = selectedColor;
         const numericPrice = parseInt(rawPrice.replace(/[^0-9]/g, ''));
 
@@ -506,12 +329,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- CHECKOUT PAGE NAVIGATION SWITCHES ---
     checkoutBtn.addEventListener("click", () => {
-        if (!currentUserSession) {
-            showAlert('error', '✕', 'Please login or create an account to proceed to checkout!');
-            cartSidebar.classList.remove("open");
-            openAuthModal();
-            return;
-        }
         if (cart.length === 0) {
             showAlert('error', '✕', 'Your cart is completely empty!');
             return;
@@ -554,7 +371,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Form submission processing loop 
-    checkoutForm.addEventListener("submit", async (e) => {
+    checkoutForm.addEventListener("submit", (e) => {
         e.preventDefault();
 
         const name = document.getElementById("custName").value;
@@ -566,17 +383,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
         sendConfirmationEmail(name, email, phone, address, city, method);
 
-        let subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        let grandTotal = subtotal + 50;
+        let total = 50;
+        cart.forEach(item => { total += item.price * item.quantity; });
 
-        let orderId = "#KO-" + Math.floor(10000 + Math.random() * 90000);
-
-        // Save order structure to Local History
         try {
             let orderHistory = JSON.parse(localStorage.getItem("ko_orders")) || [];
+            let itemsTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            let finalGrandTotal = itemsTotal + 50; 
+
+            let timestampId = "#KO-" + Math.floor(10000 + Math.random() * 90000);
+
             let currentOrderLog = {
-                orderId: orderId,
-                totalRevenue: grandTotal,
+                orderId: timestampId,
+                totalRevenue: finalGrandTotal,
                 itemsCount: cart.reduce((sum, item) => sum + item.quantity, 0),
                 itemsList: cart.map(item => ({ 
                     id: item.id,
@@ -590,52 +409,35 @@ document.addEventListener("DOMContentLoaded", () => {
             orderHistory.push(currentOrderLog);
             localStorage.setItem("ko_orders", JSON.stringify(orderHistory));
         } catch (err) {
-            console.error("Local order metrics save error:", err);
+            console.error("Failed tracking local metrics log data:", err);
         }
 
-        // Deduct variant stock level
-        for (let item of cart) {
+        cart.forEach(item => {
             let key = `${item.id}_${item.size}`;
             if (item.color) key += `_${item.color}`;
-            await updateVariantInventory(key, -item.quantity);
-        }
-
-        // Post order details to Supabase if DB exists
-        if (usingSupabaseDb && supabase) {
-            try {
-                // Post order
-                const { error: ordErr } = await supabase.from('orders').insert({
-                    id: orderId,
-                    total_revenue: grandTotal,
-                    items_count: cart.reduce((sum, item) => sum + item.quantity, 0),
-                    customer_name: name,
-                    customer_phone: phone,
-                    customer_email: email,
-                    shipping_address: address,
-                    city: city,
-                    payment_method: method
-                });
-
-                if (!ordErr) {
-                    // Post order line items
-                    const lineItems = cart.map(item => ({
-                        order_id: orderId,
-                        product_id: item.id,
-                        product_name: item.name,
-                        qty: item.quantity,
-                        price: item.price,
-                        size: item.size,
-                        color: item.color || ''
-                    }));
-                    const { error: itemsErr } = await supabase.from('order_items').insert(lineItems);
-                    if (itemsErr) console.error("Supabase order_items write error:", itemsErr.message);
-                } else {
-                    console.error("Supabase order write error:", ordErr.message);
-                }
-            } catch (err) {
-                console.error("Supabase connection error on order write:", err);
+            if (ownerInventory[key] !== undefined) {
+                ownerInventory[key] = Math.max(0, ownerInventory[key] - item.quantity);
             }
-        }
+        });
+
+        const orderLines = cart.map(i =>
+            `• ${i.name} x${i.quantity} (${i.size}${i.color ? '/' + i.color : ''}) = ${i.price * i.quantity} EGP`
+        ).join("\n");
+
+//         const message =
+// `🛍️ NEW ORDER
+// ──────────────
+// 👤 Name: ${name}
+// 📞 Phone: ${phone}
+// 📧 Email: ${email}
+// 📍 Address: ${address}, ${city}
+// 💳 Payment: ${method}
+// ──────────────
+// ${orderLines}
+// ──────────────
+// 💰 Total: ${total} EGP`;
+
+//         window.open(`https://wa.me/201271532219?text=${encodeURIComponent(message)}`, "_blank");
 
         showAlert('success', '✓', `Thank you ${name}! Your order has been placed.`);
         
@@ -649,16 +451,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const adminPanel = document.getElementById("adminPanel");
     const closeAdminBtn = document.getElementById("closeAdminBtn");
 
-    window.addEventListener("keydown", async (e) => {
+    window.addEventListener("keydown", (e) => {
         if (e.shiftKey && e.ctrlKey && (e.key === "A" || e.key === "a") ) {
             if (document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "SELECT") {
                 e.preventDefault();
-                
-                // Security Check - strictly fail silent if not authenticated as owner
-                if (!currentUserSession || currentUserSession.email !== "ososseif2@gmail.com") {
-                    return;
-                }
-                
                 adminPanel.classList.toggle("active");
                 if (adminPanel.classList.contains("active")) {
                     syncAdminSizeOptions();
@@ -679,7 +475,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const prodId = adminProdSelect.value;
 
         if (prodId === "2") {
-            adminColorGroup.style.display = "block";
+            adminColorGroup.style.display = "flex";
         } else {
             adminColorGroup.style.display = "none";
         }
@@ -712,7 +508,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (adminColorSelect) adminColorSelect.addEventListener("change", readCurrentStockToInput);
 
     if (updateStockBtn) {
-        updateStockBtn.addEventListener("click", async () => {
+        updateStockBtn.addEventListener("click", () => {
             const prodId = adminProdSelect.value;
             const size = adminSizeSelect.value;
             const newStockQty = parseInt(adminStockInput.value) || 0;
@@ -727,8 +523,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 variantDescription += ` | Color: ${color}`;
             }
 
-            await updateVariantInventory(targetKey, 0, newStockQty);
-            
+            ownerInventory[targetKey] = newStockQty;
             adminFeedback.textContent = `Success! ${selectedItemName} (${variantDescription}) stock set to ${newStockQty}.`;
             adminFeedback.className = "admin-feedback feedback-success";
 
@@ -752,25 +547,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             showAlert('warning', '⚠', 'Message received! We will get back to you shortly.');
             footerContactForm.reset();
-        });
-    }
-
-    // Form handling for the footer auth/newsletter prefill
-    const footerAuthForm = document.getElementById("footerAuth");
-    if (footerAuthForm) {
-        footerAuthForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-            const emailInput = footerAuthForm.querySelector("input[type='email']");
-            const emailVal = emailInput ? emailInput.value : "";
-            
-            openAuthModal();
-            
-            const loginEmail = document.getElementById("loginEmail");
-            const signupEmail = document.getElementById("signupEmail");
-            if (loginEmail) loginEmail.value = emailVal;
-            if (signupEmail) signupEmail.value = emailVal;
-            
-            footerAuthForm.reset();
         });
     }
 
@@ -798,14 +574,12 @@ document.addEventListener("DOMContentLoaded", () => {
             total_price: totalInvoiceCost
         };
 
-        if (window.emailjs) {
-            emailjs.send('service_3savc39', 'template_l4slz7g', templateParams, 'YgbAzTbtF11flkfqk')
-                .then((response) => {
-                    console.log('EMAIL SUCCESS!', response.status, response.text);
-                }, (error) => {
-                    console.error('EMAIL DISPATCH FAILED...', error);
-                });
-        }
+        emailjs.send('service_3savc39', 'template_l4slz7g', templateParams, 'YgbAzTbtF11flkfqk')
+            .then((response) => {
+                console.log('EMAIL SUCCESS!', response.status, response.text);
+            }, (error) => {
+                console.error('EMAIL DISPATCH FAILED...', error);
+            });
     }
 
     // --- Live Analytics Dashboard & Interactive Refund Engine ---
@@ -892,7 +666,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // --- LOGIC: REFUND 1 SINGLE UNIT OF AN ITEM ---
-    window.processSingleLineItemRefund = async (orderIndex, itemIndex) => {
+    window.processSingleLineItemRefund = (orderIndex, itemIndex) => {
         let orderHistory = JSON.parse(localStorage.getItem("ko_orders")) || [];
         let order = orderHistory[orderIndex];
         let item = order.itemsList[itemIndex];
@@ -902,7 +676,9 @@ document.addEventListener("DOMContentLoaded", () => {
         let targetInventoryKey = `${item.id}_${item.size}`;
         if (item.color) targetInventoryKey += `_${item.color}`;
         
-        await updateVariantInventory(targetInventoryKey, 1);
+        if (ownerInventory[targetInventoryKey] !== undefined) {
+            ownerInventory[targetInventoryKey] += 1;
+        }
 
         order.totalRevenue -= item.price; 
         item.qty -= 1;
@@ -914,20 +690,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (order.itemsList.length === 0 || order.totalRevenue <= 50) {
             orderHistory.splice(orderIndex, 1);
-            if (usingSupabaseDb && supabase) {
-                await supabase.from('orders').delete().eq('id', order.orderId);
-            }
         } else {
             orderHistory[orderIndex] = order;
-            if (usingSupabaseDb && supabase) {
-                await supabase.from('orders').update({ total_revenue: order.totalRevenue, items_count: order.itemsCount }).eq('id', order.orderId);
-                // Also adjust in order_items
-                if (item.qty <= 0) {
-                    await supabase.from('order_items').delete().eq('order_id', order.orderId).eq('product_id', item.id).eq('size', item.size).eq('color', item.color || '');
-                } else {
-                    await supabase.from('order_items').update({ qty: item.qty }).eq('order_id', order.orderId).eq('product_id', item.id).eq('size', item.size).eq('color', item.color || '');
-                }
-            }
         }
 
         localStorage.setItem("ko_orders", JSON.stringify(orderHistory));
@@ -938,7 +702,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // --- LOGIC: WIPING AND REFUNDING AN ENTIRE COMPLETED ORDER ---
-    window.processFullOrderMassRefund = async (orderIndex) => {
+    window.processFullOrderMassRefund = (orderIndex) => {
         let orderHistory = JSON.parse(localStorage.getItem("ko_orders")) || [];
         let order = orderHistory[orderIndex];
 
@@ -946,18 +710,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!confirm(`Are you sure you want to cancel and refund order ${order.orderId}?`)) return;
 
-        for (let item of order.itemsList) {
+        order.itemsList.forEach(item => {
             let targetInventoryKey = `${item.id}_${item.size}`;
             if (item.color) targetInventoryKey += `_${item.color}`;
-            await updateVariantInventory(targetInventoryKey, item.qty);
-        }
+            
+            if (ownerInventory[targetInventoryKey] !== undefined) {
+                ownerInventory[targetInventoryKey] += item.qty;
+            }
+        });
 
         orderHistory.splice(orderIndex, 1);
         localStorage.setItem("ko_orders", JSON.stringify(orderHistory));
-
-        if (usingSupabaseDb && supabase) {
-            await supabase.from('orders').delete().eq('id', order.orderId);
-        }
 
         updateAdminMetricsUI();
         if (typeof readCurrentStockToInput === "function") readCurrentStockToInput();
@@ -971,33 +734,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const adminProdSelectDropdown = document.getElementById("adminProductSelect");
 
     function syncCatalogUIElements() {
-        if (!catalogTargetSelect || !adminProdSelectDropdown) return;
-        
-        const prevTargetVal = catalogTargetSelect.value;
-        const prevStockVal = adminProdSelectDropdown.value;
+    if (!catalogTargetSelect || !adminProdSelectDropdown) return;
+    
+    const prevTargetVal = catalogTargetSelect.value;
+    const prevStockVal = adminProdSelectDropdown.value;
 
-        catalogTargetSelect.innerHTML = '<option value="">-- Choose Product --</option>';
-        adminProdSelectDropdown.innerHTML = '';
+    catalogTargetSelect.innerHTML = '<option value="">-- Choose Product --</option>';
+    adminProdSelectDropdown.innerHTML = '';
 
-        catalogProducts.forEach(prod => {
-            const opt1 = document.createElement("option");
-            opt1.value = prod.id;
-            opt1.textContent = prod.name;
-            catalogTargetSelect.appendChild(opt1);
+    catalogProducts.forEach(prod => {
+        const opt1 = document.createElement("option");
+        opt1.value = prod.id;
+        opt1.textContent = prod.name;
+        catalogTargetSelect.appendChild(opt1);
 
-            const opt2 = document.createElement("option");
-            opt2.value = prod.id;
-            opt2.setAttribute("data-type", prod.type);
-            opt2.textContent = prod.name;
-            adminProdSelectDropdown.appendChild(opt2);
-        });
+        const opt2 = document.createElement("option");
+        opt2.value = prod.id;
+        opt2.setAttribute("data-type", prod.type);
+        opt2.textContent = prod.name;
+        adminProdSelectDropdown.appendChild(opt2);
+    });
 
-        catalogTargetSelect.value = prevTargetVal || catalogProducts[0]?.id || ""; 
-        if(prevStockVal) adminProdSelectDropdown.value = prevStockVal;
-    }
+    catalogTargetSelect.value = prevTargetVal || catalogProducts[0]?.id || ""; // ← add this
+    if(prevStockVal) adminProdSelectDropdown.value = prevStockVal;
+}
 
     if (adminAddProductForm) {
-        adminAddProductForm.addEventListener("submit", async (e) => {
+        adminAddProductForm.addEventListener("submit", (e) => {
             e.preventDefault();
 
             const nextId = String(catalogProducts.length + 1);
@@ -1014,14 +777,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 img: imgInput
             };
 
-            await saveCatalogToDb(newProductObj);
+            // 1. Inject into array layout memory
+            catalogProducts.push(newProductObj);
 
-            // Provision stock tracks
+            // 2. SAVE IT TO LOCALSTORAGE PERMANENTLY
+            localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
+
+            // 3. Provision empty initial inventory size tracks
             const targetSizes = sizesConfig[typeInput] || [];
-            for (let sz of targetSizes) {
-                await updateVariantInventory(`${nextId}_${sz}`, 0, 10);
-            }
+            targetSizes.forEach(sz => {
+                ownerInventory[`${nextId}_${sz}`] = 10; 
+            });
 
+            // 4. Force grid interface layout redraw
             renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
             syncCatalogUIElements();
             syncAdminSizeOptions();
@@ -1032,7 +800,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (updateCatalogBtn) {
-        updateCatalogBtn.addEventListener("click", async () => {
+        updateCatalogBtn.addEventListener("click", () => {
             const selectedId = catalogTargetSelect.value;
             if (!selectedId) {
                 showAlert('error', '✕', 'Select an item to update!');
@@ -1044,26 +812,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (targetProduct) {
                 const originalPrice = targetProduct.price;
-                let finalDiscountPrice = undefined;
                 
                 if (discountPercent > 0) {
                     const deduction = originalPrice * (discountPercent / 100);
-                    finalDiscountPrice = Math.round(originalPrice - deduction);
+                    const finalDiscountPrice = Math.round(originalPrice - deduction);
+                    targetProduct.discountPrice = finalDiscountPrice;
+                } else {
+                    delete targetProduct.discountPrice;
                 }
 
-                await updateProductDiscountInDb(selectedId, finalDiscountPrice);
+                // Save dynamic price alterations directly into persistent storage tracking
+                localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
 
+                // Force grid elements layout interface redrawing loop instantly
                 renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
                 showAlert('success', '⚡', `Pricing engine modified for ${targetProduct.name}!`);
             }
         });
     }
 
+// --- CATALOG PRODUCT DELETION ENGINE ---
     const deleteCatalogBtn = document.getElementById("deleteCatalogBtn");
+
     if (deleteCatalogBtn) {
-        deleteCatalogBtn.addEventListener("click", async () => {
-            const selectedId = adminProdSelect.value;
-            if (!selectedId) {
+        deleteCatalogBtn.addEventListener("click", () => {
+const selectedId = adminProdSelect.value;            if (!selectedId) {
                 showAlert('error', '✕', 'Select an item to delete!');
                 return;
             }
@@ -1072,8 +845,18 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!targetProduct) return;
 
             if (confirm(`Are you sure you want to completely remove "${targetProduct.name}" from the store database?`)) {
-                await deleteProductFromDb(selectedId);
+                
+                // 1. Filter out the item from your mutable catalog array (declared on Line 114)
+                catalogProducts = catalogProducts.filter(p => p.id !== selectedId);
 
+                // 2. Clear out any existing DOM elements inside your grid to allow a clean redraw
+                const gridContainer = document.querySelector(".product-grid");
+                if (gridContainer) gridContainer.innerHTML = "";
+
+                // 3. Save the pruned array back into localStorage permanently
+                localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
+
+                // 4. Force synchronization loops to remove it from stock and selection forms
                 renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
                 syncCatalogUIElements();
                 syncAdminSizeOptions();
@@ -1085,7 +868,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- LIGHT / DARK THEME ENGINE ---
     const themeToggleBtn = document.getElementById("themeToggleBtn");
-    const savedTheme = localStorage.getItem("ko_cyber_theme") || "dark";
+    const savedTheme = localStorage.getItem("ko_theme") || "dark";
     if (savedTheme === "light") {
         document.body.classList.add("light-mode");
     }
@@ -1094,234 +877,16 @@ document.addEventListener("DOMContentLoaded", () => {
         themeToggleBtn.addEventListener("click", () => {
             document.body.classList.toggle("light-mode");
             if (document.body.classList.contains("light-mode")) {
-                localStorage.setItem("ko_cyber_theme", "light");
+                localStorage.setItem("ko_theme", "light");
             } else {
-                localStorage.setItem("ko_cyber_theme", "dark");
+                localStorage.setItem("ko_theme", "dark");
             }
-        });
-    }
-
-    // --- SUPABASE AUTHENTICATION ENGINE ---
-    const authModal = document.getElementById("authModal");
-    const closeAuthBtn = document.getElementById("closeAuthBtn");
-    const loginForm = document.getElementById("loginForm");
-    const signupForm = document.getElementById("signupForm");
-    const userInfoPanel = document.getElementById("userInfoPanel");
-    const signOutBtn = document.getElementById("signOutBtn");
-    const adminNavbarLink = document.getElementById("adminNavbarLink");
-    const adminPortalBtn = document.getElementById("adminPortalBtn");
-    const userEmailDisplay = document.getElementById("userEmailDisplay");
-    const userIcon = document.getElementById("userIcon");
-    const authTabBtns = document.querySelectorAll(".auth-tab-btn");
-
-    const openAuthModal = () => { authModal.style.display = "flex"; };
-    const closeAuthModal = () => { authModal.style.display = "none"; };
-
-    if (userIcon) userIcon.addEventListener("click", openAuthModal);
-    if (closeAuthBtn) closeAuthBtn.addEventListener("click", closeAuthModal);
-    window.addEventListener("click", (e) => { if (e.target === authModal) closeAuthModal(); });
-
-    // Tabs navigation inside auth panel
-    authTabBtns.forEach(btn => {
-        btn.addEventListener("click", () => {
-            authTabBtns.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            
-            const tab = btn.getAttribute("data-tab");
-            
-            if (tab === "login") {
-                loginForm.classList.add("active");
-                signupForm.classList.remove("active");
-            } else {
-                loginForm.classList.remove("active");
-                signupForm.classList.add("active");
-            }
-        });
-    });
-
-    // Update Auth UI state and enforce secret owner accessibility constraints
-    const updateUserAuthUI = (user) => {
-        if (user) {
-            currentUserSession = user;
-            userIcon.classList.add("logged-in");
-            userEmailDisplay.textContent = `Logged in as: ${user.email}`;
-            
-            loginForm.classList.remove("active");
-            signupForm.classList.remove("active");
-            userInfoPanel.classList.add("active");
-            
-            // Limit view of admin elements strictly to ososseif2@gmail.com
-            if (user.email === "ososseif2@gmail.com") {
-                adminNavbarLink.style.display = "inline-block";
-                adminPortalBtn.style.display = "block";
-            } else {
-                adminNavbarLink.style.display = "none";
-                adminPortalBtn.style.display = "none";
-            }
-        } else {
-            currentUserSession = null;
-            userIcon.classList.remove("logged-in");
-            adminNavbarLink.style.display = "none";
-            adminPortalBtn.style.display = "none";
-            adminPanel.classList.remove("active"); // Force close stock manager
-            
-            userInfoPanel.classList.remove("active");
-            
-            const activeTabBtn = document.querySelector(".auth-tab-btn[data-tab='login']");
-            const otherTabBtn = document.querySelector(".auth-tab-btn[data-tab='signup']");
-            if (activeTabBtn) activeTabBtn.classList.add("active");
-            if (otherTabBtn) otherTabBtn.classList.remove("active");
-            
-            loginForm.classList.add("active");
-            signupForm.classList.remove("active");
-        }
-    };
-
-    // Check user session on boot
-    const checkUserSession = async () => {
-        // First check local storage session fallback
-        const storedUser = JSON.parse(localStorage.getItem("ko_current_user"));
-        if (storedUser) {
-            updateUserAuthUI(storedUser);
-            return;
-        }
-
-        if (supabase) {
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                if (!error && session?.user) {
-                    updateUserAuthUI(session.user);
-                } else {
-                    updateUserAuthUI(null);
-                }
-            } catch (err) {
-                updateUserAuthUI(null);
-            }
-        } else {
-            updateUserAuthUI(null);
-        }
-    };
-
-    // Sign in submission loop with Owner fallback check
-    if (loginForm) {
-        loginForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const email = document.getElementById("loginEmail").value.trim();
-            const password = document.getElementById("loginPassword").value.trim();
-            
-            const submitBtn = loginForm.querySelector("button[type='submit']");
-            submitBtn.disabled = true;
-            submitBtn.textContent = "Signing in...";
-            
-            // Hardcoded Owner Fallback authentication bypass
-            if (email === "ososseif2@gmail.com" && password === "123456") {
-                const ownerUserObj = { id: "owner-fallback-id", email: "ososseif2@gmail.com" };
-                localStorage.setItem("ko_current_user", JSON.stringify(ownerUserObj));
-                submitBtn.disabled = false;
-                submitBtn.textContent = "Sign In";
-                showAlert("success", "✓", "Logged in as Owner Admin.");
-                updateUserAuthUI(ownerUserObj);
-                closeAuthModal();
-                return;
-            }
-
-            // Standard Supabase login path
-            if (supabase) {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                
-                submitBtn.disabled = false;
-                submitBtn.textContent = "Sign In";
-                
-                if (error) {
-                    showAlert("error", "✕", error.message);
-                } else {
-                    localStorage.setItem("ko_current_user", JSON.stringify(data.user));
-                    showAlert("success", "✓", "Welcome back!");
-                    updateUserAuthUI(data.user);
-                    closeAuthModal();
-                }
-            } else {
-                submitBtn.disabled = false;
-                submitBtn.textContent = "Sign In";
-                showAlert("error", "✕", "Database offline. Check fallback owner account.");
-            }
-        });
-    }
-
-    // Sign up submission
-    if (signupForm) {
-        signupForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const email = document.getElementById("signupEmail").value.trim();
-            const password = document.getElementById("signupPassword").value.trim();
-            
-            const submitBtn = signupForm.querySelector("button[type='submit']");
-            submitBtn.disabled = true;
-            submitBtn.textContent = "Registering...";
-            
-            if (supabase) {
-                const { data, error } = await supabase.auth.signUp({ email, password });
-                
-                submitBtn.disabled = false;
-                submitBtn.textContent = "Register";
-                
-                if (error) {
-                    showAlert("error", "✕", error.message);
-                } else {
-                    localStorage.setItem("ko_current_user", JSON.stringify(data.user));
-                    showAlert("success", "✓", "Account created successfully!");
-                    updateUserAuthUI(data.user);
-                    closeAuthModal();
-                }
-            } else {
-                submitBtn.disabled = false;
-                submitBtn.textContent = "Register";
-                showAlert("error", "✕", "Supabase authentication server is not active.");
-            }
-        });
-    }
-
-    // Sign out button
-    if (signOutBtn) {
-        signOutBtn.addEventListener("click", async () => {
-            localStorage.removeItem("ko_current_user");
-            if (supabase) {
-                await supabase.auth.signOut();
-            }
-            showAlert("success", "✓", "Signed out successfully.");
-            updateUserAuthUI(null);
-            closeAuthModal();
-        });
-    }
-
-    // Secure access checks to open admin panel
-    const checkAdminAccessAndOpen = () => {
-        if (!currentUserSession || currentUserSession.email !== "ososseif2@gmail.com") {
-            showAlert("error", "✕", "Access denied. Owner credentials required.");
-            adminPanel.classList.remove("active");
-            return;
-        }
-        
-        adminPanel.classList.add("active");
-        syncAdminSizeOptions();
-        updateAdminMetricsUI();
-    };
-
-    if (adminPortalBtn) {
-        adminPortalBtn.addEventListener("click", () => {
-            closeAuthModal();
-            checkAdminAccessAndOpen();
-        });
-    }
-    
-    if (adminNavbarLink) {
-        adminNavbarLink.addEventListener("click", (e) => {
-            e.preventDefault();
-            checkAdminAccessAndOpen();
         });
     }
 
     // --- INITIALIZATION RUN ON BOOT ---
-    initializeDatabaseState();
-    checkUserSession();
+    renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
+    syncCatalogUIElements();
+    syncAdminSizeOptions();
+    revealCards();
 });
