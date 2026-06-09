@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KO | Premium Apparel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/jpeg" href="ico.jpg">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script type="text/javascript">
+   (function(){
+      emailjs.init({
+        publicKey: "YgbAzTbtF11flkfqk",
+      });
+   })();
+</script>
+    
+</head>
+<body>
+    <div id="alert-container"></div>
+
+    <!-- Navbar -->
+    <header>
+        <div class="navbar">
+<a href="#" class="logo">KO</a>
+            <nav>
+                <div class="nav-links-right">
+                    <a href="#products">Shop</a>
+                    <a href="#footer">Contact</a>
+                    <a href="#" id="adminNavbarLink" style="display: none; color: var(--accent-gold); font-weight: 700;">Admin</a>
+                    <div id="cartIcon" class="cart-icon-container" title="Cart">
+                        <span class="cart-icon">🛒</span>
+                        <span id="cartCount" class="cart-badge">0</span>
+                    </div>
+                    <div id="userIcon" class="cart-icon-container" title="Account">
+                        <span class="user-icon">👤</span>
+                    </div>
+                    <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle Theme">
+    <!-- Moon Icon (Dark Mode default) -->
+    <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+    </svg>
+    <!-- Sun Icon (Hidden by default) -->
+    <svg class="theme-icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="5"></circle>
+        <line x1="12" y1="1" x2="12" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="23"></line>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+        <line x1="1" y1="12" x2="3" y2="12"></line>
+        <line x1="21" y1="12" x2="23" y2="12"></line>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+</button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>KO ESSENTIALS</h1>
+            <p>Define your style with sleek designs optimized for comfort.</p>
+            <a href="#products" class="btn">Browse Collection</a>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section id="products" class="products-section">
+        <h2>Our Collection</h2>
+        <div class="product-grid">
+            <!-- Dynamically populated via script.js -->
+        </div>
+    </section>
+
+    <!-- Dynamic Item View Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <div class="modal-body">
+                <div class="modal-img-container">
+                    <img id="modalImg" src="" alt="Product Image">
+                </div>
+                <div class="modal-details">
+                    <h2 id="modalName">Product Title</h2>
+                    <p id="modalPrice" class="price"></p>
+                    
+                    <div id="modalColorSection" class="color-section">
+                        <label>Select Color:</label>
+                        <div class="color-dots">
+                            <span class="color-dot dot-black active" data-color="Black"></span>
+                            <span class="color-dot dot-white" data-color="White"></span>
+                        </div>
+                    </div>
+
+                    <div class="size-section">
+                        <label>Select Size:</label>
+                        <div id="sizeSelector" class="size-selector-pills"></div>
+                    </div>
+
+                    <button class="btn order-btn" id="orderBtn">Add To Cart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal (Login / Sign Up) -->
+    <div id="authModal" class="modal">
+        <div class="modal-content auth-modal-content">
+            <span class="close-btn" id="closeAuthBtn">&times;</span>
+            <div class="auth-tabs">
+                <button class="auth-tab-btn active" data-tab="login">Login</button>
+                <button class="auth-tab-btn" data-tab="signup">Sign Up</button>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form-panel active">
+                <h2>Welcome Back</h2>
+                <p class="auth-sub">Enter your credentials to access your account</p>
+                <div class="input-field">
+                    <label for="loginEmail">Email Address</label>
+                    <input type="email" id="loginEmail" required placeholder="name@example.com">
+                </div>
+                <div class="input-field" style="margin-top: 15px;">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn auth-submit-btn" style="margin-top: 25px; width: 100%;">Sign In</button>
+            </form>
+            
+            <!-- Sign Up Form -->
+            <form id="signupForm" class="auth-form-panel">
+                <h2>Create Account</h2>
+                <p class="auth-sub">Sign up to track orders and manage stock</p>
+                <div class="input-field">
+                    <label for="signupEmail">Email Address</label>
+                    <input type="email" id="signupEmail" required placeholder="name@example.com">
+                </div>
+                <div class="input-field" style="margin-top: 15px;">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" required placeholder="Min 6 characters">
+                </div>
+                <button type="submit" class="btn auth-submit-btn" style="margin-top: 25px; width: 100%;">Register</button>
+            </form>
+
+            <!-- User Info Panel -->
+            <div id="userInfoPanel" class="auth-form-panel">
+                <h2>Your Account</h2>
+                <p class="auth-sub" id="userEmailDisplay">Logged in as example@gmail.com</p>
+                <div class="user-actions" style="margin-top: 25px; display: flex; flex-direction: column; gap: 12px;">
+                    <button id="adminPortalBtn" class="btn" style="display: none; background-color: var(--accent-gold); color: #000; width: 100%;">Open Stock Manager</button>
+                    <button id="signOutBtn" class="btn view-btn" style="width: 100%;">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sliding Sidebar Cart Feature -->
+     <!-- <div id="cartOverlay" class="cart-overlay"></div> -->
+    <div id="cartSidebar" class="cart-sidebar">
+        <div class="cart-header">
+            <h2>Your Cart</h2>
+            <span class="close-cart-btn" id="closeCartBtn">&times;</span>
+        </div>
+        <div class="cart-body" id="cartItemsContainer">
+            <p class="empty-msg">Your cart is empty.</p>
+        </div>
+        <div class="cart-footer">
+            <div class="total-row">
+                <span>Total:</span>
+                <span id="cartTotal">0 EGP</span>
+            </div>
+            <button class="btn checkout-btn" id="checkoutBtn">Proceed to Checkout</button>
+        </div>
+    </div>
+
+    <!-- DEDICATED FULL SCREEN CHECKOUT PAGE OVERLAY -->
+    <section id="checkoutPage" class="checkout-page-overlay">
+        <div class="checkout-container">
+            <div class="checkout-header">
+                <h2>KO Secure Checkout</h2>
+                <button type="button" id="backToShopBtn" class="back-btn">&larr; Return to Shop</button>
+            </div>
+
+            <div class="checkout-layout">
+                <!-- Left: Details Form -->
+<!-- Left: Details Form -->
+<form id="checkoutForm" class="checkout-form">
+    <h3>Shipping Details</h3>
+    <div class="form-grid">
+        <div class="input-field">
+            <label for="custName">Full Name *</label>
+            <input type="text" id="custName" required placeholder="John Doe">
+        </div>
+        <div class="input-field">
+            <label for="custPhone">Phone Number *</label>
+            <input type="tel" id="custPhone" required placeholder="01xxxxxxxxx">
+        </div>
+
+        <!-- Email Field Insertion -->
+        <div class="input-field full-width">
+            <label for="custEmail">Email Address *</label>
+            <input type="email" id="custEmail" required placeholder="john@example.com">
+        </div>
+
+        <div class="input-field full-width">
+            <label for="custAddress">Shipping Address *</label>
+            <input type="text" id="custAddress" required placeholder="Street Name, Building, Apartment">
+        </div>
+        <div class="input-field">
+            <label for="custCity">City / Governorate *</label>
+            <select id="custCity" required>
+                <option value="Cairo">Cairo</option>
+                <option value="Giza">Giza</option>
+                <option value="Alexandria">Alexandria</option>
+                <option value="Other">Other Governorate</option>
+            </select>
+        </div>
+        <div class="input-field">
+            <label for="payMethod">Payment Option *</label>
+            <select id="payMethod" required>
+                <option value="COD">Cash on Delivery</option>
+                <option value="InstaPay">InstaPay / Vodafone Cash</option>
+            </select>
+        </div>
+    </div>
+    <button type="submit" class="btn place-order-btn">Confirm Order</button>
+</form>
+
+                <!-- Right: Order Summary sticky column -->
+                <div class="checkout-summary">
+                    <h3>Your Order</h3>
+                    <div id="summaryItemsContainer" class="summary-items">
+                        <!-- Dynamic Checkout items populate here -->
+                    </div>
+                    <div class="summary-totals">
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <span id="summarySubtotal">0 EGP</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Shipping Fees</span>
+                            <span id="summaryShipping">50 EGP</span>
+                        </div>
+                        <hr class="summary-divider">
+                        <div class="summary-row total">
+                            <span>Grand Total</span>
+                            <span id="summaryGrandTotal">0 EGP</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer">
+        <div class="footer-container">
+            <!-- Left Column: Auth Newsletter -->
+            <div class="footer-section auth-form">
+                <h3>Join KO</h3>
+                <form id="footerAuth">
+                    <input type="email" placeholder="Enter your email" required>
+                    <button type="submit" class="btn">Sign Up / Login</button>
+                </form>
+            </div>
+
+            <!-- Middle/Right Column: Socials & New Contact Form Drop-in -->
+            <div class="footer-right-group">
+                <div class="footer-section socials">
+                    <h3>Follow Us</h3>
+                    <div class="social-links">
+                        <a href="https://www.instagram.com/ko_clothing_store/" target="_blank" aria-label="Instagram">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="social-icon"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                        </a>
+                        <a href="https://www.tiktok.com/@ko_store1ko" target="_blank" aria-label="TikTok">
+                            <svg viewBox="0 0 24 24" fill="currentColor" class="social-icon"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.6 4.17 1.12 1.21 2.69 1.96 4.32 2.11v3.97c-1.78-.13-3.49-.89-4.82-2.13-.07-.07-.1-.1-.19-.19v6.86c.1 2.37-1.07 4.69-3.11 5.86-2.26 1.3-5.14 1.15-7.23-.37-2.31-1.57-3.3-4.57-2.32-7.21.77-2.13 2.8-3.66 5.06-3.83v4c-1.12.18-2.07.97-2.41 2.05-.51 1.48.33 3.16 1.83 3.56 1.34.37 2.8-.41 3.23-1.74.12-.42.15-.87.15-1.31l-.01-13.15Z"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- NEW: Contact Us Field Column -->
+                <div class="footer-section contact-field-box">
+                    <h3>Contact Us</h3>
+                    <form id="footerContactForm" class="footer-contact-form">
+                        <div class="footer-input-wrap">
+                            <input type="text" id="contactMsg" placeholder="Message or Question..." required>
+                            <button type="submit" class="contact-submit-btn">&rarr;</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+      <div class="footer-bottom">
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px;">
+        <img src="ico.jpg" alt="KO Logo" style="height:30px; width:auto;">
+    </div>
+    <p>&copy; 2026 <b>KO Apparel</b>. All rights reserved.</p>
+    <p>Developed By <b>Seif Osama</b></p>
+</div>
+    </footer>
+
+    <!-- OWNER INVENTORY INJECTOR HUB (Hidden by default) -->
+    <div id="adminPanel" class="admin-modal-overlay">
+    <div class="admin-modal-content">
+        <div class="admin-header">
+            <h2>KO Stock Manager Dashboard</h2>
+            <span class="close-admin-btn" id="closeAdminBtn">&times;</span>
+        </div>
+        <p class="admin-tip">Logged in as Owner. Adjust variant parameters to update available inventory counts instantly.</p>
+
+        <!-- 👇 ADD THIS PRECISELY HERE (Line 281 area) 👇 -->
+        <div class="admin-metrics-grid">
+            <div class="metric-card">
+                <span class="metric-title">Gross Revenue</span>
+                <span class="metric-value" id="metricRevenue">0 EGP</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-title">Total Orders</span>
+                <span class="metric-value" id="metricOrders">0</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-title">Avg Order Value</span>
+                <span class="metric-value" id="metricAOV">0 EGP</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-title">Top Selling Item</span>
+                <span class="metric-value" id="metricTopProduct" style="font-size: 0.85rem;">None Yet</span>
+            </div>
+        </div>
+
+<!-- --- LIVE ORDER HISTORY & REFUND SYSTEM --- -->
+        <div class="admin-history-section">
+            <h3>Recent Orders & Full/Partial Refunds</h3>
+            <div id="adminOrderLogContainer" class="admin-order-log-container">
+                <!-- JavaScript will populate orders here dynamically -->
+            </div>
+        </div>
+
+        <!-- ==========================================================================
+           NEW ADDITION: ADVANCED CATALOG MANAGEMENT CONTROLS 
+           ========================================================================== -->
+        <div class="admin-catalog-management" style="margin-top: 25px; padding-top: 20px; border-top: 1px dashed #222;">
+            <div class="admin-grid-two-col">
+                <!-- A. FORM: ADD NEW PRODUCT -->
+                <div class="admin-panel-card">
+                    <h3 style="font-size: 1rem; margin-bottom:15px; color: #ff3b30;">Add New Product Drop</h3>
+                    <form id="adminAddProductForm">
+                        <div class="form-group-row" style="display:flex; gap:10px; margin-bottom:10px;">
+                            <div class="form-field" style="flex:1;">
+                                <label style="display:block; font-size:0.75rem; color:#888;">Product Title</label>
+                                <input type="text" id="newProdTitle" placeholder="e.g., Graphic Oversized Tee" required style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
+                            </div>
+                            <div class="form-field" style="flex:1;">
+                                <label style="display:block; font-size:0.75rem; color:#888;">Base Price (EGP)</label>
+                                <input type="number" id="newProdPrice" placeholder="e.g., 750" required style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
+                            </div>
+                        </div>
+                        <div class="form-group-row" style="display:flex; gap:10px; margin-bottom:10px;">
+                            <div class="form-field" style="flex:1;">
+                                <label style="display:block; font-size:0.75rem; color:#888;">Image filename</label>
+                                <input type="text" id="newProdImg" placeholder="e.g., po.png" required style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
+                            </div>
+                            <div class="form-field" style="flex:1;">
+                                <label style="display:block; font-size:0.75rem; color:#888;">Category Type</label>
+                                <select id="newProdType" style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
+                                    <option value="shirt">shirt</option>
+                                    <option value="jeans">jeans</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn" style="width:100%; padding:10px; background:#fff; color:#000; font-weight:bold; cursor:pointer;">LAUNCH PRODUCT DROP</button>
+                    </form>
+                </div>
+
+                <!-- B. FORM: LIVE PRICE ADJUSTMENTS & VISIBILITY -->
+                <div class="admin-panel-card" style="margin-top:20px;">
+                    <h3 style="font-size: 1rem; margin-bottom:15px; color: #ff3b30;">Live Catalog Engine</h3>
+                    <div class="form-group-row" style="display:flex; gap:10px; margin-bottom:10px;">
+                        <div class="form-field" style="flex:1;">
+                            <label style="display:block; font-size:0.75rem; color:#888;">Select Target Item</label>
+                            <select id="catalogTargetSelect" style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
+                                <option value="">-- Choose Product --</option>
+                            </select>
+                        </div>
+                        <div class="form-field" style="flex:1;">
+                            <label style="display:block; font-size:0.75rem; color:#888;">Set Discount (%)</label>
+                            <input type="number" id="catalogDiscount" placeholder="0" min="0" max="100" style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
+                        </div>
+                    </div>
+                    <button type="button" id="updateCatalogBtn" class="btn" style="width:100%; padding:10px; background:transparent; color:#fff; border:1px solid #fff; font-weight:bold; cursor:pointer;">APPLY CHANGES</button>
+                </div>
+            </div>
+        </div>
+        <!-- ========================================================================== -->
+
+     <div class="control-group">
+                    <label for="adminProductSelect">Select Item:</label>
+                    <select id="adminProductSelect">
+                        <option value="1" data-type="shirt">Polo T-Shirt</option>
+                        <option value="2" data-type="shirt">Oversized T-Shirt</option>
+                        <option value="3" data-type="jeans">Purple Flared Jeans</option>
+                        <option value="4" data-type="jeans">Drip Jeans</option>
+                    </select>
+                </div>
+                <div class="control-group" id="adminColorGroup">
+                    <label for="adminColorSelect">Color Match:</label>
+                    <select id="adminColorSelect">
+                        <option value="Black">Black</option>
+                        <option value="White">White</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="adminSizeSelect">Size Track:</label>
+                    <select id="adminSizeSelect">
+                        <!-- Populated contextually by JS -->
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="adminStockInput">Set Quantity:</label>
+                    <input type="number" id="adminStockInput" min="0" value="10">
+                </div>
+                <button id="updateStockBtn" class="btn admin-btn">Save Stock</button>
+<button type="button" id="deleteCatalogBtn" class="btn admin-btn" style="background-color: #ff3b30; margin-top: 10px;">Delete Product Completely</button>            </div>
+            <div id="adminFeedback" class="admin-feedback"></div>
+        </div>
+    </div>
+    
+<button id="backToTopBtn" onclick="window.scrollTo({top:0, behavior:'smooth'})">↑</button>
+
+    <script src="script.js"></script>
+</body>
+</html>
