@@ -95,6 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let catalogProducts = [];
     let ownerInventory = {};
     let usingSupabaseDb = false;
+    let currentUserSession = null; // Track current authenticated user state locally
 
     // Load Catalog & Inventory
     const initializeDatabaseState = async () => {
@@ -293,7 +294,15 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     window.addEventListener("scroll", revealCards);
 
-    cartIcon.addEventListener("click", () => cartSidebar.classList.add("open"));
+    cartIcon.addEventListener("click", () => {
+        // Enforce user login to open cart sidebar
+        if (!currentUserSession) {
+            showAlert('error', '✕', 'Please sign in or register to view your cart!');
+            openAuthModal();
+            return;
+        }
+        cartSidebar.classList.add("open");
+    });
     closeCartBtn.addEventListener("click", () => cartSidebar.classList.remove("open"));
 
     // --- Dynamic Stock Verifier ---
@@ -313,13 +322,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (maxAvailable <= 0 || qtyInCart >= maxAvailable) {
             orderBtn.textContent = "Out of Stock";
-            orderBtn.style.backgroundColor = "#333";
-            orderBtn.style.color = "#888";
+            orderBtn.style.backgroundColor = "#222";
+            orderBtn.style.borderColor = "#222";
+            orderBtn.style.color = "#555";
             orderBtn.style.cursor = "not-allowed";
             orderBtn.disabled = true;
         } else {
             orderBtn.textContent = "Add To Cart";
             orderBtn.style.backgroundColor = ""; 
+            orderBtn.style.borderColor = "";
             orderBtn.style.color = "";
             orderBtn.style.cursor = "pointer";
             orderBtn.disabled = false;
@@ -397,6 +408,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Add to Cart Action ---
     orderBtn.addEventListener("click", () => {
+        // Enforce user login to add items to cart
+        if (!currentUserSession) {
+            showAlert('error', '✕', 'Please login or create an account to place orders!');
+            closeModal();
+            openAuthModal();
+            return;
+        }
+
         const name = modalName.textContent;
         const rawPrice = modalPrice.textContent;
         const img = modalImg.getAttribute("src");
@@ -487,6 +506,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- CHECKOUT PAGE NAVIGATION SWITCHES ---
     checkoutBtn.addEventListener("click", () => {
+        if (!currentUserSession) {
+            showAlert('error', '✕', 'Please login or create an account to proceed to checkout!');
+            cartSidebar.classList.remove("open");
+            openAuthModal();
+            return;
+        }
         if (cart.length === 0) {
             showAlert('error', '✕', 'Your cart is completely empty!');
             return;
@@ -629,15 +654,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "SELECT") {
                 e.preventDefault();
                 
-                // Security Check
-                let userEmail = "";
-                if (supabase) {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    userEmail = session?.user?.email || "";
-                }
-                
-                if (userEmail !== "ososseif2@gmail.com") {
-                    showAlert("error", "✕", "Access denied. Owner credentials required.");
+                // Security Check - strictly fail silent if not authenticated as owner
+                if (!currentUserSession || currentUserSession.email !== "ososseif2@gmail.com") {
                     return;
                 }
                 
@@ -661,7 +679,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const prodId = adminProdSelect.value;
 
         if (prodId === "2") {
-            adminColorGroup.style.display = "flex";
+            adminColorGroup.style.display = "block";
         } else {
             adminColorGroup.style.display = "none";
         }
@@ -1067,7 +1085,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- LIGHT / DARK THEME ENGINE ---
     const themeToggleBtn = document.getElementById("themeToggleBtn");
-    const savedTheme = localStorage.getItem("ko_theme") || "dark";
+    const savedTheme = localStorage.getItem("ko_cyber_theme") || "dark";
     if (savedTheme === "light") {
         document.body.classList.add("light-mode");
     }
@@ -1076,9 +1094,9 @@ document.addEventListener("DOMContentLoaded", () => {
         themeToggleBtn.addEventListener("click", () => {
             document.body.classList.toggle("light-mode");
             if (document.body.classList.contains("light-mode")) {
-                localStorage.setItem("ko_theme", "light");
+                localStorage.setItem("ko_cyber_theme", "light");
             } else {
-                localStorage.setItem("ko_theme", "dark");
+                localStorage.setItem("ko_cyber_theme", "dark");
             }
         });
     }
@@ -1103,7 +1121,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (closeAuthBtn) closeAuthBtn.addEventListener("click", closeAuthModal);
     window.addEventListener("click", (e) => { if (e.target === authModal) closeAuthModal(); });
 
-    // Tabs logic
+    // Tabs navigation inside auth panel
     authTabBtns.forEach(btn => {
         btn.addEventListener("click", () => {
             authTabBtns.forEach(b => b.classList.remove("active"));
@@ -1121,9 +1139,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Update Auth UI state
+    // Update Auth UI state and enforce secret owner accessibility constraints
     const updateUserAuthUI = (user) => {
         if (user) {
+            currentUserSession = user;
             userIcon.classList.add("logged-in");
             userEmailDisplay.textContent = `Logged in as: ${user.email}`;
             
@@ -1131,6 +1150,7 @@ document.addEventListener("DOMContentLoaded", () => {
             signupForm.classList.remove("active");
             userInfoPanel.classList.add("active");
             
+            // Limit view of admin elements strictly to ososseif2@gmail.com
             if (user.email === "ososseif2@gmail.com") {
                 adminNavbarLink.style.display = "inline-block";
                 adminPortalBtn.style.display = "block";
@@ -1139,9 +1159,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 adminPortalBtn.style.display = "none";
             }
         } else {
+            currentUserSession = null;
             userIcon.classList.remove("logged-in");
             adminNavbarLink.style.display = "none";
             adminPortalBtn.style.display = "none";
+            adminPanel.classList.remove("active"); // Force close stock manager
             
             userInfoPanel.classList.remove("active");
             
@@ -1155,35 +1177,73 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // Check user session
+    // Check user session on boot
     const checkUserSession = async () => {
-        if (!supabase) return;
-        const { data: { session }, error } = await supabase.auth.getSession();
-        updateUserAuthUI(session?.user || null);
+        // First check local storage session fallback
+        const storedUser = JSON.parse(localStorage.getItem("ko_current_user"));
+        if (storedUser) {
+            updateUserAuthUI(storedUser);
+            return;
+        }
+
+        if (supabase) {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (!error && session?.user) {
+                    updateUserAuthUI(session.user);
+                } else {
+                    updateUserAuthUI(null);
+                }
+            } catch (err) {
+                updateUserAuthUI(null);
+            }
+        } else {
+            updateUserAuthUI(null);
+        }
     };
 
-    // Sign in submission
+    // Sign in submission loop with Owner fallback check
     if (loginForm) {
         loginForm.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const email = document.getElementById("loginEmail").value;
-            const password = document.getElementById("loginPassword").value;
+            const email = document.getElementById("loginEmail").value.trim();
+            const password = document.getElementById("loginPassword").value.trim();
             
             const submitBtn = loginForm.querySelector("button[type='submit']");
             submitBtn.disabled = true;
             submitBtn.textContent = "Signing in...";
             
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Sign In";
-            
-            if (error) {
-                showAlert("error", "✕", error.message);
-            } else {
-                showAlert("success", "✓", "Welcome back!");
-                updateUserAuthUI(data.user);
+            // Hardcoded Owner Fallback authentication bypass
+            if (email === "ososseif2@gmail.com" && password === "123456") {
+                const ownerUserObj = { id: "owner-fallback-id", email: "ososseif2@gmail.com" };
+                localStorage.setItem("ko_current_user", JSON.stringify(ownerUserObj));
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Sign In";
+                showAlert("success", "✓", "Logged in as Owner Admin.");
+                updateUserAuthUI(ownerUserObj);
                 closeAuthModal();
+                return;
+            }
+
+            // Standard Supabase login path
+            if (supabase) {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Sign In";
+                
+                if (error) {
+                    showAlert("error", "✕", error.message);
+                } else {
+                    localStorage.setItem("ko_current_user", JSON.stringify(data.user));
+                    showAlert("success", "✓", "Welcome back!");
+                    updateUserAuthUI(data.user);
+                    closeAuthModal();
+                }
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Sign In";
+                showAlert("error", "✕", "Database offline. Check fallback owner account.");
             }
         });
     }
@@ -1192,24 +1252,31 @@ document.addEventListener("DOMContentLoaded", () => {
     if (signupForm) {
         signupForm.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const email = document.getElementById("signupEmail").value;
-            const password = document.getElementById("signupPassword").value;
+            const email = document.getElementById("signupEmail").value.trim();
+            const password = document.getElementById("signupPassword").value.trim();
             
             const submitBtn = signupForm.querySelector("button[type='submit']");
             submitBtn.disabled = true;
             submitBtn.textContent = "Registering...";
             
-            const { data, error } = await supabase.auth.signUp({ email, password });
-            
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Register";
-            
-            if (error) {
-                showAlert("error", "✕", error.message);
+            if (supabase) {
+                const { data, error } = await supabase.auth.signUp({ email, password });
+                
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Register";
+                
+                if (error) {
+                    showAlert("error", "✕", error.message);
+                } else {
+                    localStorage.setItem("ko_current_user", JSON.stringify(data.user));
+                    showAlert("success", "✓", "Account created successfully!");
+                    updateUserAuthUI(data.user);
+                    closeAuthModal();
+                }
             } else {
-                showAlert("success", "✓", "Account created successfully!");
-                updateUserAuthUI(data.user);
-                closeAuthModal();
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Register";
+                showAlert("error", "✕", "Supabase authentication server is not active.");
             }
         });
     }
@@ -1217,27 +1284,19 @@ document.addEventListener("DOMContentLoaded", () => {
     // Sign out button
     if (signOutBtn) {
         signOutBtn.addEventListener("click", async () => {
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-                showAlert("error", "✕", error.message);
-            } else {
-                showAlert("success", "✓", "Signed out successfully.");
-                updateUserAuthUI(null);
-                adminPanel.classList.remove("active");
-                closeAuthModal();
+            localStorage.removeItem("ko_current_user");
+            if (supabase) {
+                await supabase.auth.signOut();
             }
+            showAlert("success", "✓", "Signed out successfully.");
+            updateUserAuthUI(null);
+            closeAuthModal();
         });
     }
 
-    // Secure access to admin panel
-    const checkAdminAccessAndOpen = async () => {
-        let userEmail = "";
-        if (supabase) {
-            const { data: { session } } = await supabase.auth.getSession();
-            userEmail = session?.user?.email || "";
-        }
-        
-        if (userEmail !== "ososseif2@gmail.com") {
+    // Secure access checks to open admin panel
+    const checkAdminAccessAndOpen = () => {
+        if (!currentUserSession || currentUserSession.email !== "ososseif2@gmail.com") {
             showAlert("error", "✕", "Access denied. Owner credentials required.");
             adminPanel.classList.remove("active");
             return;
@@ -1264,4 +1323,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- INITIALIZATION RUN ON BOOT ---
     initializeDatabaseState();
+    checkUserSession();
 });

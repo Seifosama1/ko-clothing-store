@@ -1,30 +1,32 @@
 /* ==========================================================================
-   KO CLOTHING STORE - PREMIUM STREETWEAR DESIGN SYSTEM
+   KO CLOTHING STORE - PREMIUM CYBER-STREETWEAR STYLING
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-    /* Color Tokens (Obsidian Dark Mode Default) */
-    --bg-main: #0a0a0c;
-    --bg-surface: #121216;
-    --bg-surface-elevated: #1a1a22;
-    --bg-header: rgba(10, 10, 12, 0.75);
-    --bg-input: #16161c;
+    /* Color Tokens (Cyber Obsidian Theme) */
+    --bg-main: #020204;
+    --bg-surface: #0a0a0f;
+    --bg-surface-elevated: #111118;
+    --bg-header: rgba(2, 2, 4, 0.75);
+    --bg-input: #0e0e14;
     
     --text-primary: #ffffff;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    --text-secondary: #8f9eb3;
+    --text-muted: #4e5a6b;
     
-    --accent-gold: #c5a880;
-    --accent-gold-hover: #b0936b;
-    --accent-red: #f43f5e;
-    --accent-green: #10b981;
+    --accent-cyan: #00f0ff;
+    --accent-cyan-hover: #00c0cc;
+    --accent-cyan-glow: rgba(0, 240, 255, 0.15);
     
-    --border-fine: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(255, 255, 255, 0.2);
-    --border-focus: #c5a880;
-    --glow-shadow: rgba(197, 168, 128, 0.15);
+    --accent-red: #ff2d55;
+    --accent-green: #00ff66;
+    
+    --border-fine: rgba(255, 255, 255, 0.05);
+    --border-hover: rgba(0, 240, 255, 0.15);
+    --border-focus: #00f0ff;
+    --glow-shadow: rgba(0, 240, 255, 0.2);
     
     /* Font Families */
     --font-heading: 'Outfit', sans-serif;
@@ -35,25 +37,7 @@
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* --- Light Mode Color Palette --- */
-body.light-mode {
-    --bg-main: #f8fafc;
-    --bg-surface: #ffffff;
-    --bg-surface-elevated: #f1f5f9;
-    --bg-header: rgba(248, 250, 252, 0.8);
-    --bg-input: #f1f5f9;
-    
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #94a3b8;
-    
-    --border-fine: rgba(15, 23, 42, 0.08);
-    --border-hover: rgba(15, 23, 42, 0.15);
-    --border-focus: #c5a880;
-    --glow-shadow: rgba(197, 168, 128, 0.08);
-}
-
-/* --- Global Reset & Base Rules --- */
+/* --- Global Reset & Base Styling --- */
 * {
     margin: 0;
     padding: 0;
@@ -61,7 +45,6 @@ body.light-mode {
     font-family: var(--font-body);
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -73,7 +56,7 @@ body {
 
 h1, h2, h3, h4, h5, h6, .logo {
     font-family: var(--font-heading);
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.5px;
 }
 
@@ -109,7 +92,11 @@ header {
     border-radius: 16px;
     z-index: 1000;
     transition: all 0.4s var(--ease-premium);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+header:hover {
+    border-color: rgba(0, 240, 255, 0.1);
 }
 
 .navbar {
@@ -121,17 +108,19 @@ header {
 
 .logo {
     font-size: 2rem;
-    font-weight: 900;
+    font-weight: 950;
     letter-spacing: 6px;
     color: var(--text-primary);
     text-decoration: none;
     text-transform: uppercase;
     transition: all 0.3s var(--ease-premium);
+    text-shadow: 0 0 10px rgba(255,255,255,0.05);
 }
 
 .logo:hover {
     letter-spacing: 8px;
-    color: var(--accent-gold);
+    color: var(--accent-cyan);
+    text-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
 }
 
 .nav-links-right {
@@ -143,10 +132,10 @@ header {
 nav a {
     color: var(--text-secondary);
     text-decoration: none;
-    font-weight: 600;
-    font-size: 0.9rem;
+    font-weight: 700;
+    font-size: 0.85rem;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 2px;
     position: relative;
     padding: 6px 0;
     transition: color 0.3s var(--ease-premium);
@@ -163,7 +152,7 @@ nav a::after {
     left: 0;
     width: 100%;
     height: 2px;
-    background-color: var(--accent-gold);
+    background-color: var(--accent-cyan);
     transform: scaleX(0);
     transform-origin: right;
     transition: transform 0.3s var(--ease-premium);
@@ -174,16 +163,16 @@ nav a:hover::after {
     transform-origin: left;
 }
 
-/* Header Trigger Icons */
+/* Floating Navigation Icon Triggers */
 .cart-icon-container {
     position: relative;
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     border: 1px solid var(--border-fine);
     background-color: rgba(255, 255, 255, 0.01);
@@ -192,31 +181,32 @@ nav a:hover::after {
 
 .cart-icon-container:hover {
     transform: translateY(-2px);
-    border-color: var(--accent-gold);
-    box-shadow: 0 4px 15px var(--glow-shadow);
-    background-color: rgba(255, 255, 255, 0.03);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 4px 15px var(--accent-cyan-glow);
+    background-color: rgba(0, 240, 255, 0.03);
 }
 
 .cart-badge {
     position: absolute;
     top: -4px;
     right: -4px;
-    background-color: var(--accent-gold);
+    background-color: var(--accent-cyan);
     color: #000000;
     font-size: 0.7rem;
-    font-weight: 800;
+    font-weight: 900;
     border-radius: 50%;
     width: 20px;
     height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 10px rgba(0, 240, 255, 0.3);
 }
 
 /* User Account Icon Glow when Logged In */
 .cart-icon-container.logged-in {
-    border-color: var(--accent-green);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 10px var(--accent-cyan-glow);
 }
 
 .cart-icon-container.logged-in::after {
@@ -226,7 +216,7 @@ nav a:hover::after {
     right: 2px;
     width: 8px;
     height: 8px;
-    background-color: var(--accent-green);
+    background-color: var(--accent-cyan);
     border-radius: 50%;
     border: 1.5px solid var(--bg-surface);
 }
@@ -237,8 +227,8 @@ nav a:hover::after {
     border: 1px solid var(--border-fine);
     cursor: pointer;
     color: var(--text-primary);
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -248,8 +238,8 @@ nav a:hover::after {
 
 .theme-toggle-btn:hover {
     transform: translateY(-2px);
-    border-color: var(--accent-gold);
-    background-color: rgba(255, 255, 255, 0.03);
+    border-color: var(--accent-cyan);
+    background-color: rgba(0, 240, 255, 0.03);
 }
 
 .theme-icon {
@@ -275,35 +265,32 @@ body:not(.light-mode) .moon-icon { display: block; }
     justify-content: center;
     text-align: center;
     position: relative;
-    background: linear-gradient(180deg, rgba(10,10,12,0.3) 0%, rgba(10,10,12,0.92) 100%), url('bg.jpg') center/cover no-repeat;
+    background: linear-gradient(180deg, rgba(2,2,4,0.3) 0%, rgba(2,2,4,0.95) 100%), url('bg.jpg') center/cover no-repeat;
     padding: 24px;
 }
 
-body.light-mode .hero {
-    background: linear-gradient(180deg, rgba(248,250,252,0.3) 0%, rgba(248,250,252,0.95) 100%), url('bg.jpg') center/cover no-repeat;
-}
-
 .hero-content {
-    max-width: 800px;
+    max-width: 850px;
     z-index: 5;
 }
 
 .hero-content h1 {
-    font-size: clamp(3rem, 8vw, 5.5rem);
-    font-weight: 900;
-    letter-spacing: 8px;
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 950;
+    letter-spacing: 10px;
     margin-bottom: 24px;
     text-transform: uppercase;
     line-height: 1.1;
     color: var(--text-primary);
+    text-shadow: 0 0 40px rgba(0, 240, 255, 0.1);
 }
 
 .hero-content p {
     color: var(--text-secondary);
     font-size: clamp(1rem, 2vw, 1.25rem);
-    letter-spacing: 1.5px;
+    letter-spacing: 2px;
     margin-bottom: 48px;
-    font-weight: 400;
+    font-weight: 500;
 }
 
 /* ==========================================================================
@@ -319,23 +306,23 @@ body.light-mode .hero {
     border: 1px solid var(--text-primary);
     border-radius: 8px;
     font-size: 0.85rem;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 2.5px;
     cursor: pointer;
     position: relative;
     z-index: 1;
     transition: all 0.3s var(--ease-premium);
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .btn:hover {
-    background-color: var(--accent-gold);
-    border-color: var(--accent-gold);
+    background-color: var(--accent-cyan);
+    border-color: var(--accent-cyan);
     color: #000000;
     transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(197, 168, 128, 0.3);
+    box-shadow: 0 10px 25px rgba(0, 240, 255, 0.35);
 }
 
 .btn:active {
@@ -354,7 +341,7 @@ body.light-mode .hero {
     background-color: var(--text-primary);
     color: var(--bg-main);
     border-color: var(--text-primary);
-    box-shadow: 0 10px 20px rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 20px rgba(255, 255, 255, 0.1);
 }
 
 /* ==========================================================================
@@ -368,8 +355,8 @@ body.light-mode .hero {
 
 .products-section h2 {
     font-size: 2.5rem;
-    font-weight: 800;
-    letter-spacing: 3px;
+    font-weight: 900;
+    letter-spacing: 4px;
     text-transform: uppercase;
     text-align: center;
     margin-bottom: 60px;
@@ -378,11 +365,12 @@ body.light-mode .hero {
 .products-section h2::after {
     content: '';
     display: block;
-    width: 60px;
+    width: 80px;
     height: 3px;
-    background-color: var(--accent-gold);
+    background-color: var(--accent-cyan);
     margin: 16px auto 0 auto;
     border-radius: 2px;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
 }
 
 .product-grid {
@@ -405,8 +393,8 @@ body.light-mode .hero {
 
 .product-card:hover {
     transform: translateY(-8px);
-    border-color: var(--accent-gold);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--accent-gold);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--accent-cyan);
 }
 
 .product-img-wrapper {
@@ -439,7 +427,7 @@ body.light-mode .hero {
 
 .product-info h3 {
     font-size: 1.25rem;
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 8px;
     letter-spacing: 0.5px;
     text-align: center;
@@ -448,8 +436,8 @@ body.light-mode .hero {
 .price {
     font-family: var(--font-heading);
     font-size: 1.1rem;
-    color: var(--accent-gold);
-    font-weight: 600;
+    color: var(--accent-cyan);
+    font-weight: 700;
     margin-bottom: 24px;
 }
 
@@ -464,7 +452,7 @@ body.light-mode .hero {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(5, 5, 7, 0.85);
+    background-color: rgba(2, 2, 4, 0.85);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     align-items: center;
@@ -480,8 +468,12 @@ body.light-mode .hero {
     max-width: 800px;
     position: relative;
     padding: 40px;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
     animation: modalZoom 0.4s var(--ease-premium) forwards;
+}
+
+.modal-content:hover {
+    border-color: rgba(0, 240, 255, 0.1);
 }
 
 .close-btn {
@@ -531,7 +523,7 @@ body.light-mode .hero {
 
 .modal-details h2 {
     font-size: 2rem;
-    font-weight: 800;
+    font-weight: 850;
     margin-bottom: 12px;
     letter-spacing: 0.5px;
 }
@@ -541,7 +533,7 @@ body.light-mode .hero {
     margin-bottom: 28px;
 }
 
-/* Color section & select options */
+/* Color and size sections styling */
 .color-section, .size-section {
     margin-bottom: 24px;
 }
@@ -574,7 +566,7 @@ body.light-mode .hero {
 }
 
 .dot-black { background-color: #000000; border: 1px solid rgba(255,255,255,0.15); }
-.dot-white { background-color: #ffffff; border: 1px solid rgba(0,0,0,0.1); }
+.dot-white { background-color: #ffffff; border: 1px solid rgba(0,0,0,0.15); }
 
 .color-dot::after {
     content: '';
@@ -590,10 +582,10 @@ body.light-mode .hero {
 .color-dot.active::after {
     opacity: 1;
     transform: scale(1);
-    border-color: var(--accent-gold);
+    border-color: var(--accent-cyan);
 }
 
-/* Premium Pill Sizer */
+/* Custom Size Selector Pills */
 .size-selector-pills {
     display: flex;
     flex-wrap: wrap;
@@ -615,16 +607,16 @@ body.light-mode .hero {
 }
 
 .size-pill:hover {
-    border-color: var(--accent-gold);
-    color: var(--accent-gold);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
     transform: translateY(-2px);
 }
 
 .size-pill.active {
-    background-color: var(--accent-gold);
+    background-color: var(--accent-cyan);
     color: #000000;
-    border-color: var(--accent-gold);
-    box-shadow: 0 4px 15px rgba(197, 168, 128, 0.3);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 4px 15px rgba(0, 240, 255, 0.4);
     transform: translateY(-1px);
 }
 
@@ -647,7 +639,7 @@ body.light-mode .hero {
     z-index: 3000;
     display: flex;
     flex-direction: column;
-    box-shadow: -20px 0 50px rgba(0, 0, 0, 0.3);
+    box-shadow: -20px 0 50px rgba(0, 0, 0, 0.5);
     transition: right 0.5s var(--ease-premium);
 }
 
@@ -665,7 +657,7 @@ body.light-mode .hero {
 
 .cart-header h2 {
     font-size: 1.5rem;
-    font-weight: 800;
+    font-weight: 850;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -776,7 +768,7 @@ body.light-mode .hero {
 .cart-footer {
     padding: 28px;
     border-top: 1px solid var(--border-fine);
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(0, 0, 0, 0.2);
 }
 
 .checkout-btn {
@@ -819,7 +811,7 @@ body.light-mode .hero {
 
 .checkout-header h2 {
     font-size: 2rem;
-    font-weight: 800;
+    font-weight: 850;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -1026,7 +1018,7 @@ body.light-mode .hero {
     left: 0;
     width: 100%;
     height: 2px;
-    background-color: var(--accent-gold);
+    background-color: var(--accent-cyan);
     transform: scaleX(0);
     transform-origin: right;
     transition: transform 0.3s var(--ease-premium);
@@ -1080,7 +1072,7 @@ body.light-mode .hero {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(5, 5, 7, 0.94);
+    background-color: rgba(2, 2, 4, 0.94);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     align-items: flex-start;
@@ -1143,7 +1135,7 @@ body.light-mode .hero {
 }
 
 .metric-card:hover {
-    border-color: var(--accent-gold);
+    border-color: var(--accent-cyan);
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
@@ -1217,7 +1209,7 @@ body.light-mode .hero {
 .admin-order-id {
     font-weight: 800;
     font-size: 0.95rem;
-    color: var(--accent-gold);
+    color: var(--accent-cyan);
     font-family: var(--font-heading);
 }
 
@@ -1245,7 +1237,7 @@ body.light-mode .hero {
 .btn-refund-item {
     background: transparent;
     color: var(--accent-red);
-    border: 1px solid rgba(244, 63, 94, 0.2);
+    border: 1px solid rgba(255, 45, 85, 0.2);
     padding: 6px 14px;
     font-size: 0.75rem;
     font-weight: 700;
@@ -1303,7 +1295,7 @@ body.light-mode .hero {
 .admin-panel-card h3 {
     font-size: 1.1rem;
     margin-bottom: 20px;
-    color: var(--accent-gold);
+    color: var(--accent-cyan);
 }
 
 .form-group-row {
@@ -1377,13 +1369,9 @@ body.light-mode .hero {
    FOOTER SECTION (Adequate Grid Spacing - No Overlapping Squeezing)
    ========================================================================== */
 footer {
-    background-color: #050508;
+    background-color: #030305;
     border-top: 1px solid var(--border-fine);
     padding: 100px 24px 40px 24px;
-}
-
-body.light-mode footer {
-    background-color: #f1f5f9;
 }
 
 .footer-container {
@@ -1396,7 +1384,7 @@ body.light-mode footer {
 
 /* Children layout */
 .footer-right-group {
-    display: contents; /* Resolves structure by promoting children directly to grid columns */
+    display: contents; /* Promotes children directly to grid columns */
 }
 
 .footer-section h3 {
@@ -1404,7 +1392,7 @@ body.light-mode footer {
     font-size: 1.1rem;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    font-weight: 800;
+    font-weight: 850;
     color: var(--text-primary);
 }
 
@@ -1445,9 +1433,9 @@ body.light-mode footer {
 
 .social-links a:hover {
     color: var(--text-primary);
-    border-color: var(--accent-gold);
+    border-color: var(--accent-cyan);
     transform: translateY(-4px);
-    box-shadow: 0 4px 15px var(--glow-shadow);
+    box-shadow: 0 4px 15px var(--accent-cyan-glow);
 }
 
 .social-icon {
@@ -1464,7 +1452,7 @@ body.light-mode footer {
 }
 
 .footer-input-wrap:focus-within {
-    border-color: var(--accent-gold);
+    border-color: var(--accent-cyan);
 }
 
 .footer-input-wrap input {
@@ -1532,7 +1520,7 @@ body.light-mode footer {
 }
 
 #backToTopBtn:hover {
-    background-color: var(--accent-gold);
+    background-color: var(--accent-cyan);
     color: #000000;
     transform: translateY(-4px);
 }
@@ -1565,10 +1553,10 @@ body.light-mode footer {
     border: 1px solid var(--border-fine);
     padding: 18px 32px;
     border-radius: 12px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     color: var(--text-primary);
     font-size: 0.95rem;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.5px;
     opacity: 0;
     transform: translateY(20px);
@@ -1587,7 +1575,7 @@ body.light-mode footer {
 
 .alert-success { border-left: 4px solid var(--accent-green); }
 .alert-error { border-left: 4px solid var(--accent-red); }
-.alert-warning { border-left: 4px solid var(--accent-gold); }
+.alert-warning { border-left: 4px solid var(--accent-cyan); }
 
 .alert-close {
     background: transparent;
