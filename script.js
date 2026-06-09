@@ -298,7 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- Dynamic Stock Verifier ---
     const checkCurrentVariantStock = () => {
-        const activePill = document.querySelector(".size-pill.active");
+        const activePill = document.querySelector("#sizeSelector .size-pill.active");
         const size = activePill ? activePill.getAttribute("data-size") : "";
         let variantKey = `${currentActiveProductId}_${size}`;
         if (colorSection.style.display === "block" && selectedColor) {
@@ -400,7 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const name = modalName.textContent;
         const rawPrice = modalPrice.textContent;
         const img = modalImg.getAttribute("src");
-        const activePill = document.querySelector(".size-pill.active");
+        const activePill = document.querySelector("#sizeSelector .size-pill.active");
         const size = activePill ? activePill.getAttribute("data-size") : "";
         const color = selectedColor;
         const numericPrice = parseInt(rawPrice.replace(/[^0-9]/g, ''));
@@ -734,6 +734,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
             showAlert('warning', '⚠', 'Message received! We will get back to you shortly.');
             footerContactForm.reset();
+        });
+    }
+
+    // Form handling for the footer auth/newsletter prefill
+    const footerAuthForm = document.getElementById("footerAuth");
+    if (footerAuthForm) {
+        footerAuthForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const emailInput = footerAuthForm.querySelector("input[type='email']");
+            const emailVal = emailInput ? emailInput.value : "";
+            
+            openAuthModal();
+            
+            const loginEmail = document.getElementById("loginEmail");
+            const signupEmail = document.getElementById("signupEmail");
+            if (loginEmail) loginEmail.value = emailVal;
+            if (signupEmail) signupEmail.value = emailVal;
+            
+            footerAuthForm.reset();
         });
     }
 
@@ -1210,22 +1229,36 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Admin portal buttons
+    // Secure access to admin panel
+    const checkAdminAccessAndOpen = async () => {
+        let userEmail = "";
+        if (supabase) {
+            const { data: { session } } = await supabase.auth.getSession();
+            userEmail = session?.user?.email || "";
+        }
+        
+        if (userEmail !== "ososseif2@gmail.com") {
+            showAlert("error", "✕", "Access denied. Owner credentials required.");
+            adminPanel.classList.remove("active");
+            return;
+        }
+        
+        adminPanel.classList.add("active");
+        syncAdminSizeOptions();
+        updateAdminMetricsUI();
+    };
+
     if (adminPortalBtn) {
         adminPortalBtn.addEventListener("click", () => {
             closeAuthModal();
-            adminPanel.classList.add("active");
-            syncAdminSizeOptions();
-            updateAdminMetricsUI();
+            checkAdminAccessAndOpen();
         });
     }
     
     if (adminNavbarLink) {
         adminNavbarLink.addEventListener("click", (e) => {
             e.preventDefault();
-            adminPanel.classList.add("active");
-            syncAdminSizeOptions();
-            updateAdminMetricsUI();
+            checkAdminAccessAndOpen();
         });
     }
 
