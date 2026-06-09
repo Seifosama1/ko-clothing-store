@@ -1,10 +1,12 @@
-// Supabase Client Instantiation
-const SUPABASE_URL = "https://iehpaycqvixqtonvcxsd.supabase.co";
+// Supabase Client Instantiation (Corrected URL with ending 't')
+const SUPABASE_URL = "https://iehpaycqvixqtonvcxst.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImllaHBheWNxdml4cXRvbnZjeHN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDYwNTcsImV4cCI6MjA5NjU4MjA1N30.A4KPXJZMB83mfznqlXlHA8KU17kSc8tepmZAquYAGQ8";
 const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
+// Global Alert Notification System
 function showAlert(type, icon, message, duration = 3500) {
     const container = document.getElementById('alert-container');
+    if (!container) return;
     const el = document.createElement('div');
     el.className = `custom-alert alert-${type}`;
     el.innerHTML = `<span class="alert-icon">${icon}</span><span class="alert-text">${message}</span><button class="alert-close" onclick="dismissAlert(this.parentElement)">×</button>`;
@@ -24,63 +26,51 @@ function dismissAlert(el) {
 function renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal) {
     const gridContainer = document.querySelector(".product-grid");
     if (!gridContainer) return;
+    gridContainer.innerHTML = ""; // Clear grid completely to ensure uniform redraw
 
     catalogProducts.forEach(prod => {
-        // Check if this product card already exists in your HTML layout to prevent duplicates
-        const existingCard = gridContainer.querySelector(`.product-card[data-id="${prod.id}"]`);
-        
-        if (!existingCard) {
-            // If it doesn't exist, append it cleanly to the end of the grid
-            const cardHTML = `
-                <div class="product-card reveal" data-id="${prod.id}" data-name="${prod.name}" data-price="${prod.discountPrice ? prod.discountPrice : prod.price} EGP" data-type="${prod.type}" data-img="${prod.img}">
-                    <div class="product-img-wrapper">
-                        <img src="${prod.img}" alt="${prod.name}">
-                    </div>
-                    <div class="product-info">
-                        <h3>${prod.name}</h3>
-                        <p class="price" id="store-price-${prod.id}">
-                            ${prod.discountPrice ? `<span style="text-decoration: line-through; opacity: 0.5; font-size: 0.85rem; margin-right: 5px;">${prod.price} EGP</span> ${prod.discountPrice} EGP` : `${prod.price} EGP`}
-                        </p>
-                        <button class="btn view-btn">View Item</button>
-                    </div>
+        const cardHTML = `
+            <div class="product-card" data-id="${prod.id}" data-name="${prod.name}" data-price="${prod.discountPrice ? prod.discountPrice : prod.price} EGP" data-type="${prod.type}" data-img="${prod.img}">
+                <div class="product-img-wrapper">
+                    <img src="${prod.img}" alt="${prod.name}">
                 </div>
-            `;
-            gridContainer.insertAdjacentHTML("beforeend", cardHTML);
-        } else if (prod.discountPrice) {
-            // If it exists but has an active discount applied, update its price display dynamically
-            const displayPriceTag = document.getElementById(`store-price-${prod.id}`);
-            if (displayPriceTag) {
-                displayPriceTag.innerHTML = `<span style="text-decoration: line-through; opacity: 0.5; font-size: 0.85rem; margin-right: 5px;">${prod.price} EGP</span> ${prod.discountPrice} EGP`;
-            }
-        }
+                <div class="product-info">
+                    <h3>${prod.name}</h3>
+                    <p class="price" id="store-price-${prod.id}">
+                        ${prod.discountPrice ? `<span style="text-decoration: line-through; opacity: 0.5; font-size: 0.85rem; margin-right: 5px;">${prod.price} EGP</span> ${prod.discountPrice} EGP` : `${prod.price} EGP`}
+                    </p>
+                    <button class="btn view-btn">View Details</button>
+                </div>
+            </div>
+        `;
+        gridContainer.insertAdjacentHTML("beforeend", cardHTML);
     });
 
     // Re-attach view button listeners globally
     document.querySelectorAll(".product-grid .product-card .view-btn").forEach(button => {
-        button.removeEventListener("click", handleViewItemClick);
         button.addEventListener("click", handleViewItemClick);
     });
 }
 
 function handleViewItemClick(e) {
     const card = e.currentTarget.closest(".product-card");
-    // Fires global modal binding sequence handled inside DOMContentLoaded
     window.triggerModalBinding(card);
 }
-
 
 // 2. MAIN APP INITIALIZATION PIPELINE
 document.addEventListener("DOMContentLoaded", () => {
     const backToTopBtn = document.getElementById("backToTopBtn");
-    window.addEventListener("scroll", () => {
-        if (window.scrollY > 300) {
-            backToTopBtn.classList.add("visible");
-        } else {
-            backToTopBtn.classList.remove("visible");
-        }
-    });
+    if (backToTopBtn) {
+        window.addEventListener("scroll", () => {
+            if (window.scrollY > 300) {
+                backToTopBtn.classList.add("visible");
+            } else {
+                backToTopBtn.classList.remove("visible");
+            }
+        });
+    }
 
-    // --- OWNER'S MASTER VARIANT INVENTORY ---
+    // --- DEFAULT MASTER DATA (FALLBACK) ---
     const defaultInventory = {
         "1_XS": 5, "1_S": 10, "1_M": 15, "1_L": 12, "1_XL": 8,
         "2_XS_Black": 5, "2_S_Black": 8, "2_M_Black": 0, "2_L_Black": 10, "2_XL_Black": 4,
@@ -88,10 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
         "3_30": 5, "3_32": 8, "3_34": 10, "3_36": 6, "3_38": 4,
         "4_30": 3, "4_32": 5, "4_34": 0, "4_36": 4, "4_38": 2
     };
-    const ownerInventory = JSON.parse(localStorage.getItem("ko_inventory")) || defaultInventory;
 
-    // PERSISTENT CATALOG DATABASE DATABASE ARRAY (Checks localStorage first)
-    let catalogProducts = JSON.parse(localStorage.getItem("ko_catalog")) || [
+    const defaultCatalog = [
         { id: "1", name: "Polo T-Shirt", price: 650, type: "shirt", img: "po.png" },
         { id: "2", name: "Oversized T-Shirt", price: 650, type: "shirt", img: "ovwhite.jpg" },
         { id: "3", name: "Purple Flared Jeans", price: 950, type: "jeans", img: "fla.jfif" },
@@ -101,6 +89,159 @@ document.addEventListener("DOMContentLoaded", () => {
     const sizesConfig = {
         shirt: ['XS', 'S', 'M', 'L', 'XL'],
         jeans: ['30', '32', '34', '36', '38']
+    };
+
+    // --- DUAL PERSISTENCE STATE LOADING ---
+    let catalogProducts = [];
+    let ownerInventory = {};
+    let usingSupabaseDb = false;
+
+    // Load Catalog & Inventory
+    const initializeDatabaseState = async () => {
+        try {
+            if (supabase) {
+                // Try fetching catalog products from Supabase
+                const { data: dbProducts, error: prodError } = await supabase.from('products').select('*');
+                
+                if (!prodError && dbProducts && dbProducts.length > 0) {
+                    catalogProducts = dbProducts.map(p => ({
+                        id: p.id,
+                        name: p.name,
+                        price: Number(p.price),
+                        type: p.type,
+                        img: p.img,
+                        discountPrice: p.discount_price ? Number(p.discount_price) : undefined
+                    }));
+                    usingSupabaseDb = true;
+                    console.log("Supabase: Catalog loaded successfully.");
+                } else {
+                    throw new Error(prodError?.message || "Products database table is empty.");
+                }
+
+                // Try fetching variant stock inventory from Supabase
+                const { data: dbInventory, error: invError } = await supabase.from('inventory').select('*');
+                if (!invError && dbInventory && dbInventory.length > 0) {
+                    dbInventory.forEach(item => {
+                        ownerInventory[item.variant_key] = item.quantity;
+                    });
+                    console.log("Supabase: Inventory loaded successfully.");
+                } else {
+                    throw new Error(invError?.message || "Inventory database table is empty.");
+                }
+            } else {
+                throw new Error("Supabase client is not available.");
+            }
+        } catch (err) {
+            console.warn("Supabase load failed. Falling back to LocalStorage.", err.message);
+            usingSupabaseDb = false;
+            
+            // LocalStorage fallback loading
+            catalogProducts = JSON.parse(localStorage.getItem("ko_catalog")) || defaultCatalog;
+            ownerInventory = JSON.parse(localStorage.getItem("ko_inventory")) || defaultInventory;
+            
+            // Seed localStorage if not existing
+            if (!localStorage.getItem("ko_catalog")) localStorage.setItem("ko_catalog", JSON.stringify(defaultCatalog));
+            if (!localStorage.getItem("ko_inventory")) localStorage.setItem("ko_inventory", JSON.stringify(defaultInventory));
+        }
+
+        // Trigger storefront rendering once state is ready
+        renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
+        syncCatalogUIElements();
+        syncAdminSizeOptions();
+        revealCards();
+    };
+
+    // --- State mutation helpers that handle both Supabase and LocalStorage ---
+    const updateVariantInventory = async (key, delta, setQuantity = null) => {
+        let currentQty = ownerInventory[key] !== undefined ? ownerInventory[key] : 0;
+        let newQty = setQuantity !== null ? setQuantity : Math.max(0, currentQty + delta);
+        ownerInventory[key] = newQty;
+
+        // Save local
+        localStorage.setItem("ko_inventory", JSON.stringify(ownerInventory));
+
+        // Save to Supabase
+        if (usingSupabaseDb && supabase) {
+            try {
+                const { error } = await supabase
+                    .from('inventory')
+                    .upsert({ variant_key: key, quantity: newQty }, { onConflict: 'variant_key' });
+                if (error) console.error("Supabase upsert inventory error:", error.message);
+            } catch (err) {
+                console.error("Supabase connection write error:", err);
+            }
+        }
+    };
+
+    const saveCatalogToDb = async (newProduct) => {
+        catalogProducts.push(newProduct);
+        localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
+
+        if (usingSupabaseDb && supabase) {
+            try {
+                const { error } = await supabase.from('products').insert({
+                    id: newProduct.id,
+                    name: newProduct.name,
+                    price: newProduct.price,
+                    type: newProduct.type,
+                    img: newProduct.img
+                });
+                if (error) console.error("Supabase product insert error:", error.message);
+            } catch (err) {
+                console.error("Supabase product connection error:", err);
+            }
+        }
+    };
+
+    const deleteProductFromDb = async (id) => {
+        catalogProducts = catalogProducts.filter(p => p.id !== id);
+        localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
+
+        // Clean inventory local
+        for (let key in ownerInventory) {
+            if (key.startsWith(id + "_")) {
+                delete ownerInventory[key];
+            }
+        }
+        localStorage.setItem("ko_inventory", JSON.stringify(ownerInventory));
+
+        if (usingSupabaseDb && supabase) {
+            try {
+                // Delete product
+                const { error: pErr } = await supabase.from('products').delete().eq('id', id);
+                if (pErr) console.error("Supabase delete product error:", pErr.message);
+
+                // Delete matching inventory rows
+                const { error: iErr } = await supabase.from('inventory').delete().like('variant_key', `${id}\_%`);
+                if (iErr) console.error("Supabase delete inventory rows error:", iErr.message);
+            } catch (err) {
+                console.error("Supabase delete connection error:", err);
+            }
+        }
+    };
+
+    const updateProductDiscountInDb = async (id, discountPrice) => {
+        const product = catalogProducts.find(p => p.id === id);
+        if (!product) return;
+
+        if (discountPrice) {
+            product.discountPrice = discountPrice;
+        } else {
+            delete product.discountPrice;
+        }
+        localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
+
+        if (usingSupabaseDb && supabase) {
+            try {
+                const { error } = await supabase
+                    .from('products')
+                    .update({ discount_price: discountPrice || null })
+                    .eq('id', id);
+                if (error) console.error("Supabase update discount error:", error.message);
+            } catch (err) {
+                console.error("Supabase connection error:", err);
+            }
+        }
     };
 
     let cart = [];
@@ -114,7 +255,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const modalImg = document.getElementById("modalImg");
     const modalName = document.getElementById("modalName");
     const modalPrice = document.getElementById("modalPrice");
-    const sizeSelector = document.getElementById("sizeSelector");
     const orderBtn = document.getElementById("orderBtn");
     const colorSection = document.getElementById("modalColorSection");
     const colorDots = document.querySelectorAll(".color-dot");
@@ -152,8 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
     window.addEventListener("scroll", revealCards);
-// --- Safe Cart Toggle Animations ---
-   
+
     cartIcon.addEventListener("click", () => cartSidebar.classList.add("open"));
     closeCartBtn.addEventListener("click", () => cartSidebar.classList.remove("open"));
 
@@ -187,14 +326,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // sizeSelect listener removed since click on size-pills handles it
-
     colorDots.forEach(dot => {
         dot.addEventListener("click", () => {
             colorDots.forEach(d => d.classList.remove("active"));
             dot.classList.add("active");
             selectedColor = dot.getAttribute("data-color");
-            if(modalName.textContent === "Oversized T-Shirt") {
+            if (modalName.textContent === "Oversized T-Shirt") {
                 if (selectedColor === "Black") {
                     modalImg.setAttribute("src", "ovblack.jpg");
                 } else {
@@ -252,7 +389,6 @@ document.addEventListener("DOMContentLoaded", () => {
         modal.style.display = "flex";
     };
 
-    // Expose binding safely onto global window scope for helper functions
     window.triggerModalBinding = bindProductToModal;
 
     const closeModal = () => { modal.style.display = "none"; };
@@ -393,7 +529,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Form submission processing loop 
-    checkoutForm.addEventListener("submit", (e) => {
+    checkoutForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const name = document.getElementById("custName").value;
@@ -405,19 +541,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         sendConfirmationEmail(name, email, phone, address, city, method);
 
-        let total = 50;
-        cart.forEach(item => { total += item.price * item.quantity; });
+        let subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        let grandTotal = subtotal + 50;
 
+        let orderId = "#KO-" + Math.floor(10000 + Math.random() * 90000);
+
+        // Save order structure to Local History
         try {
             let orderHistory = JSON.parse(localStorage.getItem("ko_orders")) || [];
-            let itemsTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            let finalGrandTotal = itemsTotal + 50; 
-
-            let timestampId = "#KO-" + Math.floor(10000 + Math.random() * 90000);
-
             let currentOrderLog = {
-                orderId: timestampId,
-                totalRevenue: finalGrandTotal,
+                orderId: orderId,
+                totalRevenue: grandTotal,
                 itemsCount: cart.reduce((sum, item) => sum + item.quantity, 0),
                 itemsList: cart.map(item => ({ 
                     id: item.id,
@@ -431,36 +565,52 @@ document.addEventListener("DOMContentLoaded", () => {
             orderHistory.push(currentOrderLog);
             localStorage.setItem("ko_orders", JSON.stringify(orderHistory));
         } catch (err) {
-            console.error("Failed tracking local metrics log data:", err);
+            console.error("Local order metrics save error:", err);
         }
 
-        cart.forEach(item => {
+        // Deduct variant stock level
+        for (let item of cart) {
             let key = `${item.id}_${item.size}`;
             if (item.color) key += `_${item.color}`;
-            if (ownerInventory[key] !== undefined) {
-                ownerInventory[key] = Math.max(0, ownerInventory[key] - item.quantity);
+            await updateVariantInventory(key, -item.quantity);
+        }
+
+        // Post order details to Supabase if DB exists
+        if (usingSupabaseDb && supabase) {
+            try {
+                // Post order
+                const { error: ordErr } = await supabase.from('orders').insert({
+                    id: orderId,
+                    total_revenue: grandTotal,
+                    items_count: cart.reduce((sum, item) => sum + item.quantity, 0),
+                    customer_name: name,
+                    customer_phone: phone,
+                    customer_email: email,
+                    shipping_address: address,
+                    city: city,
+                    payment_method: method
+                });
+
+                if (!ordErr) {
+                    // Post order line items
+                    const lineItems = cart.map(item => ({
+                        order_id: orderId,
+                        product_id: item.id,
+                        product_name: item.name,
+                        qty: item.quantity,
+                        price: item.price,
+                        size: item.size,
+                        color: item.color || ''
+                    }));
+                    const { error: itemsErr } = await supabase.from('order_items').insert(lineItems);
+                    if (itemsErr) console.error("Supabase order_items write error:", itemsErr.message);
+                } else {
+                    console.error("Supabase order write error:", ordErr.message);
+                }
+            } catch (err) {
+                console.error("Supabase connection error on order write:", err);
             }
-        });
-        localStorage.setItem("ko_inventory", JSON.stringify(ownerInventory));
-
-        const orderLines = cart.map(i =>
-            `• ${i.name} x${i.quantity} (${i.size}${i.color ? '/' + i.color : ''}) = ${i.price * i.quantity} EGP`
-        ).join("\n");
-
-//         const message =
-// `🛍️ NEW ORDER
-// ──────────────
-// 👤 Name: ${name}
-// 📞 Phone: ${phone}
-// 📧 Email: ${email}
-// 📍 Address: ${address}, ${city}
-// 💳 Payment: ${method}
-// ──────────────
-// ${orderLines}
-// ──────────────
-// 💰 Total: ${total} EGP`;
-
-//         window.open(`https://wa.me/201271532219?text=${encodeURIComponent(message)}`, "_blank");
+        }
 
         showAlert('success', '✓', `Thank you ${name}! Your order has been placed.`);
         
@@ -544,7 +694,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (adminColorSelect) adminColorSelect.addEventListener("change", readCurrentStockToInput);
 
     if (updateStockBtn) {
-        updateStockBtn.addEventListener("click", () => {
+        updateStockBtn.addEventListener("click", async () => {
             const prodId = adminProdSelect.value;
             const size = adminSizeSelect.value;
             const newStockQty = parseInt(adminStockInput.value) || 0;
@@ -559,8 +709,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 variantDescription += ` | Color: ${color}`;
             }
 
-            ownerInventory[targetKey] = newStockQty;
-            localStorage.setItem("ko_inventory", JSON.stringify(ownerInventory));
+            await updateVariantInventory(targetKey, 0, newStockQty);
+            
             adminFeedback.textContent = `Success! ${selectedItemName} (${variantDescription}) stock set to ${newStockQty}.`;
             adminFeedback.className = "admin-feedback feedback-success";
 
@@ -611,12 +761,14 @@ document.addEventListener("DOMContentLoaded", () => {
             total_price: totalInvoiceCost
         };
 
-        emailjs.send('service_3savc39', 'template_l4slz7g', templateParams, 'YgbAzTbtF11flkfqk')
-            .then((response) => {
-                console.log('EMAIL SUCCESS!', response.status, response.text);
-            }, (error) => {
-                console.error('EMAIL DISPATCH FAILED...', error);
-            });
+        if (window.emailjs) {
+            emailjs.send('service_3savc39', 'template_l4slz7g', templateParams, 'YgbAzTbtF11flkfqk')
+                .then((response) => {
+                    console.log('EMAIL SUCCESS!', response.status, response.text);
+                }, (error) => {
+                    console.error('EMAIL DISPATCH FAILED...', error);
+                });
+        }
     }
 
     // --- Live Analytics Dashboard & Interactive Refund Engine ---
@@ -703,7 +855,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // --- LOGIC: REFUND 1 SINGLE UNIT OF AN ITEM ---
-    window.processSingleLineItemRefund = (orderIndex, itemIndex) => {
+    window.processSingleLineItemRefund = async (orderIndex, itemIndex) => {
         let orderHistory = JSON.parse(localStorage.getItem("ko_orders")) || [];
         let order = orderHistory[orderIndex];
         let item = order.itemsList[itemIndex];
@@ -713,10 +865,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let targetInventoryKey = `${item.id}_${item.size}`;
         if (item.color) targetInventoryKey += `_${item.color}`;
         
-        if (ownerInventory[targetInventoryKey] !== undefined) {
-            ownerInventory[targetInventoryKey] += 1;
-        }
-        localStorage.setItem("ko_inventory", JSON.stringify(ownerInventory));
+        await updateVariantInventory(targetInventoryKey, 1);
 
         order.totalRevenue -= item.price; 
         item.qty -= 1;
@@ -728,8 +877,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (order.itemsList.length === 0 || order.totalRevenue <= 50) {
             orderHistory.splice(orderIndex, 1);
+            if (usingSupabaseDb && supabase) {
+                await supabase.from('orders').delete().eq('id', order.orderId);
+            }
         } else {
             orderHistory[orderIndex] = order;
+            if (usingSupabaseDb && supabase) {
+                await supabase.from('orders').update({ total_revenue: order.totalRevenue, items_count: order.itemsCount }).eq('id', order.orderId);
+                // Also adjust in order_items
+                if (item.qty <= 0) {
+                    await supabase.from('order_items').delete().eq('order_id', order.orderId).eq('product_id', item.id).eq('size', item.size).eq('color', item.color || '');
+                } else {
+                    await supabase.from('order_items').update({ qty: item.qty }).eq('order_id', order.orderId).eq('product_id', item.id).eq('size', item.size).eq('color', item.color || '');
+                }
+            }
         }
 
         localStorage.setItem("ko_orders", JSON.stringify(orderHistory));
@@ -740,7 +901,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // --- LOGIC: WIPING AND REFUNDING AN ENTIRE COMPLETED ORDER ---
-    window.processFullOrderMassRefund = (orderIndex) => {
+    window.processFullOrderMassRefund = async (orderIndex) => {
         let orderHistory = JSON.parse(localStorage.getItem("ko_orders")) || [];
         let order = orderHistory[orderIndex];
 
@@ -748,18 +909,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!confirm(`Are you sure you want to cancel and refund order ${order.orderId}?`)) return;
 
-        order.itemsList.forEach(item => {
+        for (let item of order.itemsList) {
             let targetInventoryKey = `${item.id}_${item.size}`;
             if (item.color) targetInventoryKey += `_${item.color}`;
-            
-            if (ownerInventory[targetInventoryKey] !== undefined) {
-                ownerInventory[targetInventoryKey] += item.qty;
-            }
-        });
-        localStorage.setItem("ko_inventory", JSON.stringify(ownerInventory));
+            await updateVariantInventory(targetInventoryKey, item.qty);
+        }
 
         orderHistory.splice(orderIndex, 1);
         localStorage.setItem("ko_orders", JSON.stringify(orderHistory));
+
+        if (usingSupabaseDb && supabase) {
+            await supabase.from('orders').delete().eq('id', order.orderId);
+        }
 
         updateAdminMetricsUI();
         if (typeof readCurrentStockToInput === "function") readCurrentStockToInput();
@@ -773,33 +934,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const adminProdSelectDropdown = document.getElementById("adminProductSelect");
 
     function syncCatalogUIElements() {
-    if (!catalogTargetSelect || !adminProdSelectDropdown) return;
-    
-    const prevTargetVal = catalogTargetSelect.value;
-    const prevStockVal = adminProdSelectDropdown.value;
+        if (!catalogTargetSelect || !adminProdSelectDropdown) return;
+        
+        const prevTargetVal = catalogTargetSelect.value;
+        const prevStockVal = adminProdSelectDropdown.value;
 
-    catalogTargetSelect.innerHTML = '<option value="">-- Choose Product --</option>';
-    adminProdSelectDropdown.innerHTML = '';
+        catalogTargetSelect.innerHTML = '<option value="">-- Choose Product --</option>';
+        adminProdSelectDropdown.innerHTML = '';
 
-    catalogProducts.forEach(prod => {
-        const opt1 = document.createElement("option");
-        opt1.value = prod.id;
-        opt1.textContent = prod.name;
-        catalogTargetSelect.appendChild(opt1);
+        catalogProducts.forEach(prod => {
+            const opt1 = document.createElement("option");
+            opt1.value = prod.id;
+            opt1.textContent = prod.name;
+            catalogTargetSelect.appendChild(opt1);
 
-        const opt2 = document.createElement("option");
-        opt2.value = prod.id;
-        opt2.setAttribute("data-type", prod.type);
-        opt2.textContent = prod.name;
-        adminProdSelectDropdown.appendChild(opt2);
-    });
+            const opt2 = document.createElement("option");
+            opt2.value = prod.id;
+            opt2.setAttribute("data-type", prod.type);
+            opt2.textContent = prod.name;
+            adminProdSelectDropdown.appendChild(opt2);
+        });
 
-    catalogTargetSelect.value = prevTargetVal || catalogProducts[0]?.id || ""; // ← add this
-    if(prevStockVal) adminProdSelectDropdown.value = prevStockVal;
-}
+        catalogTargetSelect.value = prevTargetVal || catalogProducts[0]?.id || ""; 
+        if(prevStockVal) adminProdSelectDropdown.value = prevStockVal;
+    }
 
     if (adminAddProductForm) {
-        adminAddProductForm.addEventListener("submit", (e) => {
+        adminAddProductForm.addEventListener("submit", async (e) => {
             e.preventDefault();
 
             const nextId = String(catalogProducts.length + 1);
@@ -816,20 +977,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 img: imgInput
             };
 
-            // 1. Inject into array layout memory
-            catalogProducts.push(newProductObj);
+            await saveCatalogToDb(newProductObj);
 
-            // 2. SAVE IT TO LOCALSTORAGE PERMANENTLY
-            localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
-
-            // 3. Provision empty initial inventory size tracks
+            // Provision stock tracks
             const targetSizes = sizesConfig[typeInput] || [];
-            targetSizes.forEach(sz => {
-                ownerInventory[`${nextId}_${sz}`] = 10; 
-            });
-            localStorage.setItem("ko_inventory", JSON.stringify(ownerInventory));
+            for (let sz of targetSizes) {
+                await updateVariantInventory(`${nextId}_${sz}`, 0, 10);
+            }
 
-            // 4. Force grid interface layout redraw
             renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
             syncCatalogUIElements();
             syncAdminSizeOptions();
@@ -840,7 +995,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (updateCatalogBtn) {
-        updateCatalogBtn.addEventListener("click", () => {
+        updateCatalogBtn.addEventListener("click", async () => {
             const selectedId = catalogTargetSelect.value;
             if (!selectedId) {
                 showAlert('error', '✕', 'Select an item to update!');
@@ -852,31 +1007,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (targetProduct) {
                 const originalPrice = targetProduct.price;
+                let finalDiscountPrice = undefined;
                 
                 if (discountPercent > 0) {
                     const deduction = originalPrice * (discountPercent / 100);
-                    const finalDiscountPrice = Math.round(originalPrice - deduction);
-                    targetProduct.discountPrice = finalDiscountPrice;
-                } else {
-                    delete targetProduct.discountPrice;
+                    finalDiscountPrice = Math.round(originalPrice - deduction);
                 }
 
-                // Save dynamic price alterations directly into persistent storage tracking
-                localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
+                await updateProductDiscountInDb(selectedId, finalDiscountPrice);
 
-                // Force grid elements layout interface redrawing loop instantly
                 renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
                 showAlert('success', '⚡', `Pricing engine modified for ${targetProduct.name}!`);
             }
         });
     }
 
-// --- CATALOG PRODUCT DELETION ENGINE ---
     const deleteCatalogBtn = document.getElementById("deleteCatalogBtn");
-
     if (deleteCatalogBtn) {
-        deleteCatalogBtn.addEventListener("click", () => {
-const selectedId = adminProdSelect.value;            if (!selectedId) {
+        deleteCatalogBtn.addEventListener("click", async () => {
+            const selectedId = adminProdSelect.value;
+            if (!selectedId) {
                 showAlert('error', '✕', 'Select an item to delete!');
                 return;
             }
@@ -885,26 +1035,8 @@ const selectedId = adminProdSelect.value;            if (!selectedId) {
             if (!targetProduct) return;
 
             if (confirm(`Are you sure you want to completely remove "${targetProduct.name}" from the store database?`)) {
-                
-                // 1. Filter out the item from your mutable catalog array (declared on Line 114)
-                catalogProducts = catalogProducts.filter(p => p.id !== selectedId);
+                await deleteProductFromDb(selectedId);
 
-                // Clean up inventory records
-                for (let key in ownerInventory) {
-                    if (key.startsWith(selectedId + "_")) {
-                        delete ownerInventory[key];
-                    }
-                }
-                localStorage.setItem("ko_inventory", JSON.stringify(ownerInventory));
-
-                // 2. Clear out any existing DOM elements inside your grid to allow a clean redraw
-                const gridContainer = document.querySelector(".product-grid");
-                if (gridContainer) gridContainer.innerHTML = "";
-
-                // 3. Save the pruned array back into localStorage permanently
-                localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
-
-                // 4. Force synchronization loops to remove it from stock and selection forms
                 renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
                 syncCatalogUIElements();
                 syncAdminSizeOptions();
@@ -1098,9 +1230,5 @@ const selectedId = adminProdSelect.value;            if (!selectedId) {
     }
 
     // --- INITIALIZATION RUN ON BOOT ---
-    renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
-    syncCatalogUIElements();
-    syncAdminSizeOptions();
-    checkUserSession();
-    revealCards();
+    initializeDatabaseState();
 });
