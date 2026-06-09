@@ -65,7 +65,7 @@
 
     <!-- Products Section -->
     <section id="products" class="products-section">
-        <h2>Our Collection</h2>
+        <h2 class="scroll-animate sa-fade-down">Our Collection</h2>
         <div class="product-grid">
             
             <!-- Product 1 -->
@@ -245,18 +245,46 @@
         <!-- Footer -->
     <footer id="footer">
         <div class="footer-container">
-            <!-- Left Column: Auth Newsletter -->
-            <div class="footer-section auth-form">
-                <h3>Join KO</h3>
-                <form id="footerAuth">
-                    <input type="email" placeholder="Enter your email" required>
-                    <button type="submit" class="btn">Sign Up / Login</button>
+            <!-- Left Column: Member Login -->
+            <div class="footer-section auth-form scroll-animate sa-fade-up">
+                <h3>Member Login</h3>
+
+                <!-- Login Form (shown by default) -->
+                <form id="footerAuth" class="auth-state">
+                    <input type="email" id="authEmailInput" placeholder="Email address" required>
+
+                    <!-- Password field with show/hide toggle -->
+                    <div class="auth-password-wrap">
+                        <input type="password" id="authPasswordInput" placeholder="Password" required minlength="6">
+                        <button type="button" id="togglePasswordBtn" class="toggle-password-btn" aria-label="Toggle password visibility">
+                            <svg class="eye-icon eye-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="eye-icon eye-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
+                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="auth-hint">Minimum 6 characters</p>
+
+                    <button type="submit" class="btn" id="authLoginBtn">Sign In</button>
+                    <p id="authMsg" class="admin-login-msg"></p>
+                    <p class="auth-signup-link">Don't have an account? <a href="#footer" id="authSignUpLink">Sign up</a></p>
                 </form>
+
+                <!-- Logged-in State (hidden by default) -->
+                <div id="authLoggedInView" style="display:none;">
+                    <p id="authWelcomeMsg" class="auth-welcome-msg"></p>
+                    <button type="button" class="btn admin-signout-btn" id="authSignOutBtn">Sign Out</button>
+                </div>
             </div>
 
             <!-- Middle/Right Column: Socials & New Contact Form Drop-in -->
             <div class="footer-right-group">
-                <div class="footer-section socials">
+                <div class="footer-section socials scroll-animate sa-fade-up sa-delay-1">
                     <h3>Follow Us</h3>
                     <div class="social-links">
                         <a href="https://www.instagram.com/ko_clothing_store/" target="_blank" aria-label="Instagram">
@@ -269,7 +297,7 @@
                 </div>
 
                 <!-- NEW: Contact Us Field Column -->
-                <div class="footer-section contact-field-box">
+                <div class="footer-section contact-field-box scroll-animate sa-fade-up sa-delay-2">
                     <h3>Contact Us</h3>
                     <form id="footerContactForm" class="footer-contact-form">
                         <div class="footer-input-wrap">
@@ -280,7 +308,7 @@
                 </div>
             </div>
         </div>
-      <div class="footer-bottom">
+      <div class="footer-bottom scroll-animate sa-fade-up">
     <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px;">
         <img src="ico.jpg" alt="KO Logo" style="height:30px; width:auto;">
     </div>
@@ -288,6 +316,76 @@
     <p>Developed By <b>Seif Osama</b></p>
 </div>
     </footer>
+
+    <!-- SIGNUP MODAL -->
+    <div id="signupModal" class="signup-modal-overlay">
+        <div class="signup-modal-content">
+            <div class="signup-modal-header">
+                <h2>Create Account</h2>
+                <span class="close-signup-btn" id="closeSignupBtn">&times;</span>
+            </div>
+            <p class="signup-modal-sub">Join KO and enjoy a faster checkout experience.</p>
+
+            <form id="signupForm" class="signup-form">
+
+                <!-- Full Name -->
+                <div class="signup-field">
+                    <label for="signupName">Full Name</label>
+                    <input type="text" id="signupName" placeholder="e.g. Seif Osama" required autocomplete="off">
+                </div>
+
+                <!-- Email -->
+                <div class="signup-field">
+                    <label for="signupEmail">Email Address</label>
+                    <input type="email" id="signupEmail" placeholder="e.g. seif@email.com" required autocomplete="off">
+                </div>
+
+                <!-- Password -->
+                <div class="signup-field">
+                    <label for="signupPassword">Password</label>
+                    <div class="auth-password-wrap">
+                        <input type="password" id="signupPassword" placeholder="Min. 6 characters" required minlength="6">
+                        <button type="button" class="toggle-password-btn" id="toggleSignupPasswordBtn" aria-label="Toggle password">
+                            <svg class="eye-icon su-eye-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="eye-icon su-eye-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
+                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="signup-field">
+                    <label for="signupConfirmPassword">Confirm Password</label>
+                    <div class="auth-password-wrap">
+                        <input type="password" id="signupConfirmPassword" placeholder="Re-enter password" required minlength="6">
+                        <button type="button" class="toggle-password-btn" id="toggleSignupConfirmBtn" aria-label="Toggle confirm password">
+                            <svg class="eye-icon su-confirm-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="eye-icon su-confirm-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
+                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <p id="signupMsg" class="signup-msg"></p>
+
+                <button type="submit" class="btn signup-submit-btn">Create Account</button>
+
+                <p class="signup-login-link">Already have an account? <a href="#footer" id="switchToLoginLink">Sign in</a></p>
+            </form>
+        </div>
+    </div>
 
     <!-- OWNER INVENTORY INJECTOR HUB (Hidden by default) -->
     <div id="adminPanel" class="admin-modal-overlay">
@@ -345,11 +443,63 @@
                                 <input type="number" id="newProdPrice" placeholder="e.g., 750" required style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
                             </div>
                         </div>
-                        <div class="form-group-row" style="display:flex; gap:10px; margin-bottom:10px;">
-                            <div class="form-field" style="flex:1;">
-                                <label style="display:block; font-size:0.75rem; color:#888;">Image filename</label>
-                                <input type="text" id="newProdImg" placeholder="e.g., po.png" required style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
+
+                        <!-- IMAGE SOURCE SELECTOR -->
+                        <div class="form-field" style="margin-bottom:10px;">
+                            <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:6px;">Image Source</label>
+                            <div class="img-source-tabs" id="imgSourceTabs">
+                                <button type="button" class="img-tab active" data-tab="filename">Filename</button>
+                                <button type="button" class="img-tab" data-tab="url">URL Link</button>
+                                <button type="button" class="img-tab" data-tab="upload">Upload File</button>
                             </div>
+                        </div>
+
+                        <!-- TAB: Filename -->
+                        <div class="img-source-panel active" id="imgPanel-filename" style="margin-bottom:10px;">
+                            <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:4px;">Filename in project folder</label>
+                            <input type="text" id="newProdImgFilename" placeholder="e.g., po.png or folder/image.jpg" style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
+                            <p style="font-size:0.7rem; color:#555; margin-top:4px;">Must be a file already in your project directory.</p>
+                        </div>
+
+                        <!-- TAB: URL -->
+                        <div class="img-source-panel" id="imgPanel-url" style="margin-bottom:10px; display:none;">
+                            <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:4px;">Direct Image URL</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="url" id="newProdImgUrl" placeholder="https://example.com/image.jpg" style="flex:1; padding:8px; background:#111; border:1px solid #222; color:#fff;">
+                                <button type="button" id="previewUrlBtn" style="padding:8px 12px; background:#222; border:1px solid #333; color:#888; cursor:pointer; font-size:0.75rem; white-space:nowrap;">Preview</button>
+                            </div>
+                        </div>
+
+                        <!-- TAB: Upload -->
+                        <div class="img-source-panel" id="imgPanel-upload" style="margin-bottom:10px; display:none;">
+                            <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:4px;">Upload from device</label>
+                            <div class="img-upload-dropzone" id="imgUploadDropzone">
+                                <input type="file" id="newProdImgFile" accept="image/*" style="display:none;">
+                                <div class="dropzone-inner" id="dropzoneInner">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:28px;height:28px;color:#444;margin-bottom:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    <span style="font-size:0.78rem; color:#555;">Drop image here or <span style="color:#aaa; text-decoration:underline; cursor:pointer;" id="dropzoneBrowse">browse</span></span>
+                                </div>
+                                <div class="dropzone-preview" id="dropzonePreview" style="display:none;">
+                                    <img id="dropzonePreviewImg" src="" alt="Preview" style="max-height:80px; max-width:100%; object-fit:contain; border-radius:3px;">
+                                    <button type="button" id="dropzoneClear" style="background:transparent;border:none;color:#ff3b30;cursor:pointer;font-size:0.75rem;margin-top:4px;">✕ Remove</button>
+                                </div>
+                            </div>
+                            <p style="font-size:0.7rem; color:#555; margin-top:4px;">Image is embedded as a data URL — works offline, no server needed.</p>
+                        </div>
+
+                        <!-- LIVE IMAGE PREVIEW STRIP -->
+                        <div id="imgLivePreviewStrip" style="display:none; margin-bottom:10px; padding:8px; background:#0a0a0a; border:1px solid #1a1a1a; border-radius:4px; align-items:center; gap:10px;">
+                            <img id="imgLivePreviewThumb" src="" alt="" style="width:48px; height:60px; object-fit:cover; border-radius:2px; border:1px solid #222;">
+                            <div>
+                                <p style="font-size:0.72rem; color:#aaa; margin:0;">Preview</p>
+                                <p id="imgLivePreviewLabel" style="font-size:0.78rem; color:#fff; margin:0; word-break:break-all;"></p>
+                            </div>
+                        </div>
+
+                        <!-- hidden master input JS writes to -->
+                        <input type="hidden" id="newProdImg">
+
+                        <div class="form-group-row" style="display:flex; gap:10px; margin-bottom:14px;">
                             <div class="form-field" style="flex:1;">
                                 <label style="display:block; font-size:0.75rem; color:#888;">Category Type</label>
                                 <select id="newProdType" style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
@@ -357,27 +507,73 @@
                                     <option value="jeans">jeans</option>
                                 </select>
                             </div>
+                            <div class="form-field" style="flex:1;">
+                                <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:6px;">Has Color Variants?</label>
+                                <label class="admin-toggle-wrap">
+                                    <input type="checkbox" id="newProdHasColors">
+                                    <span class="admin-toggle-slider"></span>
+                                    <span class="admin-toggle-label">Black / White</span>
+                                </label>
+                            </div>
                         </div>
+
                         <button type="submit" class="btn" style="width:100%; padding:10px; background:#fff; color:#000; font-weight:bold; cursor:pointer;">LAUNCH PRODUCT DROP</button>
                     </form>
                 </div>
 
-                <!-- B. FORM: LIVE PRICE ADJUSTMENTS & VISIBILITY -->
+                <!-- B. FORM: LIVE PRICE ADJUSTMENTS & DISCOUNT MANAGER -->
                 <div class="admin-panel-card" style="margin-top:20px;">
-                    <h3 style="font-size: 1rem; margin-bottom:15px; color: #ff3b30;">Live Catalog Engine</h3>
-                    <div class="form-group-row" style="display:flex; gap:10px; margin-bottom:10px;">
-                        <div class="form-field" style="flex:1;">
-                            <label style="display:block; font-size:0.75rem; color:#888;">Select Target Item</label>
-                            <select id="catalogTargetSelect" style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
-                                <option value="">-- Choose Product --</option>
-                            </select>
+                    <h3 style="font-size: 1rem; margin-bottom:15px; color: #ff3b30;">Discount Manager</h3>
+
+                    <!-- Product selector -->
+                    <div class="form-field" style="margin-bottom:12px;">
+                        <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:4px;">Select Target Item</label>
+                        <select id="catalogTargetSelect" style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;"></select>
+                    </div>
+
+                    <!-- Current price display -->
+                    <div id="discountCurrentPriceRow" style="display:none; margin-bottom:12px; padding:8px; background:#0a0a0a; border:1px solid #1a1a1a; border-radius:4px;">
+                        <p style="font-size:0.72rem; color:#666; margin:0 0 2px 0;">BASE PRICE</p>
+                        <p id="discountCurrentPriceVal" style="font-size:1.1rem; font-weight:700; color:#fff; margin:0;"></p>
+                    </div>
+
+                    <!-- On Sale toggle -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; padding:10px 12px; background:#0f0f0f; border:1px solid #1c1c1c; border-radius:4px;">
+                        <div>
+                            <p style="font-size:0.8rem; color:#ccc; margin:0; font-weight:600;">ON SALE</p>
+                            <p style="font-size:0.7rem; color:#555; margin:2px 0 0 0;">Enables strikethrough on store grid</p>
                         </div>
-                        <div class="form-field" style="flex:1;">
-                            <label style="display:block; font-size:0.75rem; color:#888;">Set Discount (%)</label>
-                            <input type="number" id="catalogDiscount" placeholder="0" min="0" max="100" style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
+                        <label class="admin-toggle-wrap">
+                            <input type="checkbox" id="discountOnSaleToggle">
+                            <span class="admin-toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Discount controls — shown only when On Sale is checked -->
+                    <div id="discountControlsGroup" style="display:none;">
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <div style="flex:1;">
+                                <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:4px;">Discount %</label>
+                                <input type="number" id="catalogDiscount" placeholder="e.g. 20" min="1" max="99" style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
+                            </div>
+                            <div style="flex:1;">
+                                <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:4px;">— or — Fixed Sale Price (EGP)</label>
+                                <input type="number" id="catalogFixedPrice" placeholder="e.g. 499" min="1" style="width:100%; padding:8px; background:#111; border:1px solid #222; color:#fff;">
+                            </div>
+                        </div>
+
+                        <!-- Live calculated preview -->
+                        <div id="discountPreviewRow" style="display:none; padding:8px 12px; background:#0a0a0a; border:1px solid #1a1a1a; border-radius:4px; margin-bottom:10px;">
+                            <p style="font-size:0.7rem; color:#666; margin:0 0 3px 0;">SALE PRICE PREVIEW</p>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span id="discountPreviewOld" style="font-size:0.9rem; color:#555; text-decoration:line-through;"></span>
+                                <span id="discountPreviewNew" style="font-size:1.2rem; font-weight:700; color:#34c759;"></span>
+                                <span id="discountPreviewBadge" style="font-size:0.7rem; background:#ff3b30; color:#fff; padding:2px 6px; border-radius:3px;"></span>
+                            </div>
                         </div>
                     </div>
-                    <button type="button" id="updateCatalogBtn" class="btn" style="width:100%; padding:10px; background:transparent; color:#fff; border:1px solid #fff; font-weight:bold; cursor:pointer;">APPLY CHANGES</button>
+
+                    <button type="button" id="updateCatalogBtn" class="btn" style="width:100%; padding:10px; background:transparent; color:#fff; border:1px solid #fff; font-weight:bold; cursor:pointer; margin-top:4px;">APPLY CHANGES</button>
                 </div>
             </div>
         </div>

@@ -20,34 +20,29 @@ function renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToMo
     const gridContainer = document.querySelector(".product-grid");
     if (!gridContainer) return;
 
+    // Always do a full clean redraw so discounts/prices always reflect current catalog state
+    gridContainer.innerHTML = "";
+
     catalogProducts.forEach(prod => {
-        // Check if this product card already exists in your HTML layout to prevent duplicates
-        const existingCard = gridContainer.querySelector(`.product-card[data-id="${prod.id}"]`);
-        
-        if (!existingCard) {
-            // If it doesn't exist, append it cleanly to the end of the grid
-            const cardHTML = `
-                <div class="product-card reveal" data-id="${prod.id}" data-name="${prod.name}" data-price="${prod.discountPrice ? prod.discountPrice : prod.price} EGP" data-type="${prod.type}" data-img="${prod.img}">
-                    <div class="product-img-wrapper">
-                        <img src="${prod.img}" alt="${prod.name}">
-                    </div>
-                    <div class="product-info">
-                        <h3>${prod.name}</h3>
-                        <p class="price" id="store-price-${prod.id}">
-                            ${prod.discountPrice ? `<span style="text-decoration: line-through; opacity: 0.5; font-size: 0.85rem; margin-right: 5px;">${prod.price} EGP</span> ${prod.discountPrice} EGP` : `${prod.price} EGP`}
-                        </p>
-                        <button class="btn view-btn">View Item</button>
-                    </div>
+        const displayPrice = prod.discountPrice ? prod.discountPrice : prod.price;
+        const priceHTML = prod.discountPrice
+            ? `<span style="text-decoration:line-through; opacity:0.5; font-size:0.85rem; margin-right:5px;">${prod.price} EGP</span> ${prod.discountPrice} EGP`
+            : `${prod.price} EGP`;
+
+        const cardHTML = `
+            <div class="product-card reveal" data-id="${prod.id}" data-name="${prod.name}" data-price="${displayPrice} EGP" data-type="${prod.type}" data-img="${prod.img}" ${prod.hasColors ? 'data-has-colors="true"' : ''}>
+                ${prod.discountPrice ? `<span class="sale-badge">−${prod.discountPercent}% OFF</span>` : ''}
+                <div class="product-img-wrapper">
+                    <img src="${prod.img}" alt="${prod.name}">
                 </div>
-            `;
-            gridContainer.insertAdjacentHTML("beforeend", cardHTML);
-        } else if (prod.discountPrice) {
-            // If it exists but has an active discount applied, update its price display dynamically
-            const displayPriceTag = document.getElementById(`store-price-${prod.id}`);
-            if (displayPriceTag) {
-                displayPriceTag.innerHTML = `<span style="text-decoration: line-through; opacity: 0.5; font-size: 0.85rem; margin-right: 5px;">${prod.price} EGP</span> ${prod.discountPrice} EGP`;
-            }
-        }
+                <div class="product-info">
+                    <h3>${prod.name}</h3>
+                    <p class="price" id="store-price-${prod.id}">${priceHTML}</p>
+                    <button class="btn view-btn">View Item</button>
+                </div>
+            </div>
+        `;
+        gridContainer.insertAdjacentHTML("beforeend", cardHTML);
     });
 
     // Re-attach view button listeners globally
@@ -55,6 +50,13 @@ function renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToMo
         button.removeEventListener("click", handleViewItemClick);
         button.addEventListener("click", handleViewItemClick);
     });
+
+    // Re-observe new cards for scroll animations
+    if (window.scrollObserverInstance) {
+        document.querySelectorAll(".product-grid .product-card:not(.reveal)").forEach(card => {
+            window.scrollObserverInstance.observe(card);
+        });
+    }
 }
 
 function handleViewItemClick(e) {
@@ -86,10 +88,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // PERSISTENT CATALOG DATABASE DATABASE ARRAY (Checks localStorage first)
     let catalogProducts = JSON.parse(localStorage.getItem("ko_catalog")) || [
-        { id: "1", name: "Polo T-Shirt", price: 650, type: "shirt", img: "po.png" },
-        { id: "2", name: "Oversized T-Shirt", price: 650, type: "shirt", img: "ovwhite.jpg" },
-        { id: "3", name: "Purple Flared Jeans", price: 950, type: "jeans", img: "fla.jfif" },
-        { id: "4", name: "Drip Jeans", price: 950, type: "jeans", img: "dri.jfif" }
+        { id: "1", name: "Polo T-Shirt",       price: 650,  type: "shirt", img: "po.png"      },
+        { id: "2", name: "Oversized T-Shirt",   price: 650,  type: "shirt", img: "ovwhite.jpg", hasColors: true },
+        { id: "3", name: "Purple Flared Jeans", price: 950,  type: "jeans", img: "fla.jfif"    },
+        { id: "4", name: "Drip Jeans",          price: 950,  type: "jeans", img: "dri.jfif"    }
     ];
 
     const sizesConfig = {
@@ -138,11 +140,30 @@ document.addEventListener("DOMContentLoaded", () => {
     const updateStockBtn = document.getElementById("updateStockBtn");
     const adminFeedback = document.getElementById("adminFeedback");
 
-    // --- Scroll Reveal Engine ---
+    // --- Scroll Reveal Engine (IntersectionObserver) ---
+    const scrollObserver = window.scrollObserverInstance = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add("reveal");
+                scrollObserver.unobserve(entry.target); // fire once only
+            }
+        });
+    }, { threshold: 0.12 });
+
+    // Observe product cards
+    document.querySelectorAll(".product-grid .product-card").forEach(card => {
+        scrollObserver.observe(card);
+    });
+
+    // Observe all other scroll-animate elements
+    document.querySelectorAll(".scroll-animate").forEach(el => {
+        scrollObserver.observe(el);
+    });
+
+    // Re-observe newly rendered product cards after grid redraws
     const revealCards = () => {
-        document.querySelectorAll(".product-grid .product-card").forEach(card => {
-            const cardTop = card.getBoundingClientRect().top;
-            if (cardTop < window.innerHeight - 50) card.classList.add("reveal");
+        document.querySelectorAll(".product-grid .product-card:not(.reveal)").forEach(card => {
+            scrollObserver.observe(card);
         });
     };
     window.addEventListener("scroll", revealCards);
@@ -451,14 +472,240 @@ document.addEventListener("DOMContentLoaded", () => {
     const adminPanel = document.getElementById("adminPanel");
     const closeAdminBtn = document.getElementById("closeAdminBtn");
 
+    // --- LOGIN SYSTEM (Customers + Admin) ---
+    const ADMIN_EMAIL = "ososseif2@gmail.com";
+    const ADMIN_PASSWORD = "123456";
+    let isAdminLoggedIn = false;
+    let isUserLoggedIn = false;
+
+    const footerAuth       = document.getElementById("footerAuth");
+    const authEmailInput   = document.getElementById("authEmailInput");
+    const authPasswordInput= document.getElementById("authPasswordInput");
+    const authMsg          = document.getElementById("authMsg");
+    const authLoggedInView = document.getElementById("authLoggedInView");
+    const authWelcomeMsg   = document.getElementById("authWelcomeMsg");
+    const authSignOutBtn   = document.getElementById("authSignOutBtn");
+
+    // Simple in-memory customer store (extend with localStorage if needed)
+    const customerAccounts = JSON.parse(localStorage.getItem("ko_customers")) || [];
+
+    function showLoggedInState(label, isAdmin) {
+        footerAuth.style.display = "none";
+        authLoggedInView.style.display = "block";
+        authWelcomeMsg.textContent = `Welcome back, ${label}! ${isAdmin ? "🔓 Admin access granted." : ""}`;
+        authWelcomeMsg.className = isAdmin ? "auth-welcome-msg msg-admin" : "auth-welcome-msg msg-success";
+    }
+
+    function signOut() {
+        isUserLoggedIn = false;
+        isAdminLoggedIn = false;
+        footerAuth.style.display = "flex";
+        authLoggedInView.style.display = "none";
+        authMsg.textContent = "";
+        authEmailInput.value = "";
+        authPasswordInput.value = "";
+        adminPanel.classList.remove("active");
+        showAlert('warning', '🔒', 'You have been signed out.');
+    }
+
+    if (footerAuth) {
+        footerAuth.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const email    = authEmailInput.value.trim().toLowerCase();
+            const password = authPasswordInput.value;
+
+            // --- Validate password length ---
+            if (password.length < 6) {
+                authMsg.textContent = "✕ Password must be at least 6 characters.";
+                authMsg.className = "admin-login-msg msg-error";
+                showAlert('error', '✕', 'Password must be at least 6 characters.');
+                authPasswordInput.focus();
+                return;
+            }
+
+            authMsg.textContent = "";
+
+            // --- Check admin credentials first ---
+            if (email === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD) {
+                isAdminLoggedIn = true;
+                isUserLoggedIn  = true;
+                showLoggedInState("Admin", true);
+                adminPanel.classList.add("active");
+                syncAdminSizeOptions();
+                updateAdminMetricsUI();
+                showAlert('success', '🔓', 'Welcome, Admin! Dashboard is now open.');
+                return;
+            }
+
+            // --- Check existing customer accounts ---
+            const existingCustomer = customerAccounts.find(c => c.email === email);
+
+            if (existingCustomer) {
+                // Returning customer — check password
+                if (existingCustomer.password === password) {
+                    isUserLoggedIn = true;
+                    showLoggedInState(existingCustomer.name || email, false);
+                    showAlert('success', '✓', `Welcome back!`);
+                } else {
+                    authMsg.textContent = "✕ Incorrect password.";
+                    authMsg.className = "admin-login-msg msg-error";
+                    showAlert('error', '✕', 'Incorrect password.');
+                }
+            } else {
+                // New customer — register them
+                const newCustomer = { email, password, name: email.split("@")[0] };
+                customerAccounts.push(newCustomer);
+                localStorage.setItem("ko_customers", JSON.stringify(customerAccounts));
+                isUserLoggedIn = true;
+                showLoggedInState(newCustomer.name, false);
+                showAlert('success', '✨', `Account created! Welcome, ${newCustomer.name}.`);
+            }
+        });
+    }
+
+    if (authSignOutBtn) {
+        authSignOutBtn.addEventListener("click", signOut);
+    }
+
+    // --- PASSWORD SHOW / HIDE TOGGLE ---
+    const togglePasswordBtn = document.getElementById("togglePasswordBtn");
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener("click", () => {
+            const isHidden = authPasswordInput.type === "password";
+            authPasswordInput.type = isHidden ? "text" : "password";
+            document.querySelector(".eye-show").style.display = isHidden ? "none" : "";
+            document.querySelector(".eye-hide").style.display = isHidden ? "" : "none";
+        });
+    }
+
+    // --- SIGNUP MODAL LOGIC ---
+    const signupModal       = document.getElementById("signupModal");
+    const closeSignupBtn    = document.getElementById("closeSignupBtn");
+    const signupForm        = document.getElementById("signupForm");
+    const signupMsg         = document.getElementById("signupMsg");
+    const signupNameInput   = document.getElementById("signupName");
+    const signupEmailInput  = document.getElementById("signupEmail");
+    const signupPassInput   = document.getElementById("signupPassword");
+    const signupConfInput   = document.getElementById("signupConfirmPassword");
+    const switchToLoginLink = document.getElementById("switchToLoginLink");
+
+    function openSignupModal() {
+        signupModal.classList.add("active");
+        signupMsg.textContent = "";
+        signupForm.reset();
+    }
+
+    function closeSignupModal() {
+        signupModal.classList.remove("active");
+    }
+
+    // "Don't have an account? Sign up" → open modal
+    const authSignUpLink = document.getElementById("authSignUpLink");
+    if (authSignUpLink) {
+        authSignUpLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            openSignupModal();
+        });
+    }
+
+    // Close button
+    if (closeSignupBtn) {
+        closeSignupBtn.addEventListener("click", closeSignupModal);
+    }
+
+    // Click outside to close
+    if (signupModal) {
+        signupModal.addEventListener("click", (e) => {
+            if (e.target === signupModal) closeSignupModal();
+        });
+    }
+
+    // "Already have an account? Sign in" → close modal + scroll to footer login
+    if (switchToLoginLink) {
+        switchToLoginLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            closeSignupModal();
+            setTimeout(() => {
+                document.getElementById("footer").scrollIntoView({ behavior: "smooth" });
+                setTimeout(() => authEmailInput && authEmailInput.focus(), 600);
+            }, 200);
+        });
+    }
+
+    // Password show/hide toggles for signup modal
+    const toggleSignupPasswordBtn = document.getElementById("toggleSignupPasswordBtn");
+    if (toggleSignupPasswordBtn) {
+        toggleSignupPasswordBtn.addEventListener("click", () => {
+            const hidden = signupPassInput.type === "password";
+            signupPassInput.type = hidden ? "text" : "password";
+            document.querySelector(".su-eye-show").style.display = hidden ? "none" : "";
+            document.querySelector(".su-eye-hide").style.display = hidden ? "" : "none";
+        });
+    }
+
+    const toggleSignupConfirmBtn = document.getElementById("toggleSignupConfirmBtn");
+    if (toggleSignupConfirmBtn) {
+        toggleSignupConfirmBtn.addEventListener("click", () => {
+            const hidden = signupConfInput.type === "password";
+            signupConfInput.type = hidden ? "text" : "password";
+            document.querySelector(".su-confirm-show").style.display = hidden ? "none" : "";
+            document.querySelector(".su-confirm-hide").style.display = hidden ? "" : "none";
+        });
+    }
+
+    // Signup form submission
+    if (signupForm) {
+        signupForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            const name     = signupNameInput.value.trim();
+            const email    = signupEmailInput.value.trim().toLowerCase();
+            const password = signupPassInput.value;
+            const confirm  = signupConfInput.value;
+
+            // Validate password length
+            if (password.length < 6) {
+                signupMsg.textContent = "✕ Password must be at least 6 characters.";
+                signupMsg.className = "signup-msg msg-error";
+                return;
+            }
+
+            // Validate passwords match
+            if (password !== confirm) {
+                signupMsg.textContent = "✕ Passwords do not match.";
+                signupMsg.className = "signup-msg msg-error";
+                signupConfInput.focus();
+                return;
+            }
+
+            // Check if email already registered
+            const existing = customerAccounts.find(c => c.email === email);
+            if (existing) {
+                signupMsg.textContent = "✕ An account with this email already exists.";
+                signupMsg.className = "signup-msg msg-error";
+                return;
+            }
+
+            // Register the new account
+            const newCustomer = { name, email, password };
+            customerAccounts.push(newCustomer);
+            localStorage.setItem("ko_customers", JSON.stringify(customerAccounts));
+
+            // Auto-login after signup
+            isUserLoggedIn = true;
+            closeSignupModal();
+            showLoggedInState(name, false);
+            showAlert("success", "✨", `Welcome to KO, ${name}! Your account has been created.`);
+        });
+    }
+
+    // Shift+A to sign out admin (only when admin is logged in, not while typing)
     window.addEventListener("keydown", (e) => {
-        if (e.shiftKey && e.ctrlKey && (e.key === "A" || e.key === "a") ) {
+        if (e.shiftKey && !e.ctrlKey && (e.key === "A" || e.key === "a")) {
             if (document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "SELECT") {
-                e.preventDefault();
-                adminPanel.classList.toggle("active");
-                if (adminPanel.classList.contains("active")) {
-                    syncAdminSizeOptions();
-                    updateAdminMetricsUI();
+                if (isAdminLoggedIn) {
+                    e.preventDefault();
+                    signOut();
                 }
             }
         }
@@ -734,100 +981,373 @@ document.addEventListener("DOMContentLoaded", () => {
     const adminProdSelectDropdown = document.getElementById("adminProductSelect");
 
     function syncCatalogUIElements() {
-    if (!catalogTargetSelect || !adminProdSelectDropdown) return;
-    
-    const prevTargetVal = catalogTargetSelect.value;
-    const prevStockVal = adminProdSelectDropdown.value;
+        if (!catalogTargetSelect || !adminProdSelectDropdown) return;
 
-    catalogTargetSelect.innerHTML = '<option value="">-- Choose Product --</option>';
-    adminProdSelectDropdown.innerHTML = '';
+        const prevTargetVal = catalogTargetSelect.value;
+        const prevStockVal = adminProdSelectDropdown.value;
 
-    catalogProducts.forEach(prod => {
-        const opt1 = document.createElement("option");
-        opt1.value = prod.id;
-        opt1.textContent = prod.name;
-        catalogTargetSelect.appendChild(opt1);
+        catalogTargetSelect.innerHTML = '<option value="">-- Choose Product --</option>';
+        adminProdSelectDropdown.innerHTML = '';
 
-        const opt2 = document.createElement("option");
-        opt2.value = prod.id;
-        opt2.setAttribute("data-type", prod.type);
-        opt2.textContent = prod.name;
-        adminProdSelectDropdown.appendChild(opt2);
-    });
+        catalogProducts.forEach(prod => {
+            const opt1 = document.createElement("option");
+            opt1.value = prod.id;
+            opt1.textContent = prod.name + (prod.discountPrice ? ' 🏷️' : '');
+            catalogTargetSelect.appendChild(opt1);
 
-    catalogTargetSelect.value = prevTargetVal || catalogProducts[0]?.id || ""; // ← add this
-    if(prevStockVal) adminProdSelectDropdown.value = prevStockVal;
-}
+            const opt2 = document.createElement("option");
+            opt2.value = prod.id;
+            opt2.setAttribute("data-type", prod.type);
+            opt2.textContent = prod.name;
+            adminProdSelectDropdown.appendChild(opt2);
+        });
 
+        catalogTargetSelect.value = prevTargetVal || catalogProducts[0]?.id || "";
+        if (prevStockVal) adminProdSelectDropdown.value = prevStockVal;
+
+        // Refresh discount UI to reflect the newly selected product
+        refreshDiscountManagerUI();
+    }
+
+    // =========================================================
+    // FEATURE 1: IMAGE UPLOADER / URL GENERATOR
+    // =========================================================
+
+    // --- Tab switcher for image source ---
+    const imgSourceTabs = document.getElementById("imgSourceTabs");
+    let activeImgSource = "filename"; // default
+    let uploadedDataUrl = null; // holds base64 for uploaded files
+
+    if (imgSourceTabs) {
+        imgSourceTabs.querySelectorAll(".img-tab").forEach(tab => {
+            tab.addEventListener("click", () => {
+                imgSourceTabs.querySelectorAll(".img-tab").forEach(t => t.classList.remove("active"));
+                tab.classList.add("active");
+                activeImgSource = tab.dataset.tab;
+
+                // Show correct panel
+                ["filename", "url", "upload"].forEach(id => {
+                    const panel = document.getElementById(`imgPanel-${id}`);
+                    if (panel) panel.style.display = id === activeImgSource ? "block" : "none";
+                });
+
+                updateImgLivePreview();
+            });
+        });
+    }
+
+    // --- Filename input: live preview as you type ---
+    const filenameInput = document.getElementById("newProdImgFilename");
+    if (filenameInput) {
+        filenameInput.addEventListener("input", updateImgLivePreview);
+    }
+
+    // --- URL input: preview on button click or paste ---
+    const urlInput = document.getElementById("newProdImgUrl");
+    const previewUrlBtn = document.getElementById("previewUrlBtn");
+    if (urlInput) urlInput.addEventListener("input", updateImgLivePreview);
+    if (previewUrlBtn) previewUrlBtn.addEventListener("click", updateImgLivePreview);
+
+    // --- Upload dropzone ---
+    const dropzone = document.getElementById("imgUploadDropzone");
+    const fileInput = document.getElementById("newProdImgFile");
+    const dropzoneBrowse = document.getElementById("dropzoneBrowse");
+    const dropzoneInner = document.getElementById("dropzoneInner");
+    const dropzonePreview = document.getElementById("dropzonePreview");
+    const dropzonePreviewImg = document.getElementById("dropzonePreviewImg");
+    const dropzoneClear = document.getElementById("dropzoneClear");
+
+    if (dropzoneBrowse) dropzoneBrowse.addEventListener("click", () => fileInput && fileInput.click());
+
+    if (dropzone) {
+        dropzone.addEventListener("dragover", e => { e.preventDefault(); dropzone.classList.add("drag-over"); });
+        dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag-over"));
+        dropzone.addEventListener("drop", e => {
+            e.preventDefault();
+            dropzone.classList.remove("drag-over");
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith("image/")) handleUploadedFile(file);
+        });
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener("change", () => {
+            if (fileInput.files[0]) handleUploadedFile(fileInput.files[0]);
+        });
+    }
+
+    if (dropzoneClear) {
+        dropzoneClear.addEventListener("click", () => {
+            uploadedDataUrl = null;
+            if (fileInput) fileInput.value = "";
+            if (dropzoneInner) dropzoneInner.style.display = "flex";
+            if (dropzonePreview) dropzonePreview.style.display = "none";
+            updateImgLivePreview();
+        });
+    }
+
+    function handleUploadedFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            uploadedDataUrl = e.target.result;
+            if (dropzonePreviewImg) dropzonePreviewImg.src = uploadedDataUrl;
+            if (dropzoneInner) dropzoneInner.style.display = "none";
+            if (dropzonePreview) dropzonePreview.style.display = "flex";
+            updateImgLivePreview();
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function getResolvedImgSrc() {
+        if (activeImgSource === "filename") {
+            return (filenameInput && filenameInput.value.trim()) || "";
+        } else if (activeImgSource === "url") {
+            return (urlInput && urlInput.value.trim()) || "";
+        } else if (activeImgSource === "upload") {
+            return uploadedDataUrl || "";
+        }
+        return "";
+    }
+
+    function updateImgLivePreview() {
+        const src = getResolvedImgSrc();
+        const strip = document.getElementById("imgLivePreviewStrip");
+        const thumb = document.getElementById("imgLivePreviewThumb");
+        const label = document.getElementById("imgLivePreviewLabel");
+
+        if (!src || !strip) return;
+
+        thumb.src = src;
+        thumb.onerror = () => {
+            strip.style.display = "none";
+        };
+        thumb.onload = () => {
+            strip.style.display = "flex";
+            if (activeImgSource === "upload") {
+                label.textContent = "Uploaded image (embedded)";
+            } else if (activeImgSource === "url") {
+                label.textContent = src.length > 50 ? src.slice(0, 50) + "…" : src;
+            } else {
+                label.textContent = src;
+            }
+        };
+    }
+
+    // --- Add Product form submission ---
     if (adminAddProductForm) {
         adminAddProductForm.addEventListener("submit", (e) => {
             e.preventDefault();
 
-            const nextId = String(catalogProducts.length + 1);
-            const titleInput = document.getElementById("newProdTitle").value;
+            const imgSrc = getResolvedImgSrc();
+            if (!imgSrc) {
+                showAlert('error', '✕', 'Please provide an image (filename, URL, or upload).');
+                return;
+            }
+
+            const nextId = String(Date.now()); // unique timestamp ID avoids collisions
+            const titleInput = document.getElementById("newProdTitle").value.trim();
             const priceInput = parseFloat(document.getElementById("newProdPrice").value);
-            const imgInput = document.getElementById("newProdImg").value;
             const typeInput = document.getElementById("newProdType").value;
+            const hasColors = document.getElementById("newProdHasColors").checked;
 
             const newProductObj = {
                 id: nextId,
                 name: titleInput,
                 price: priceInput,
                 type: typeInput,
-                img: imgInput
+                img: imgSrc,
+                ...(hasColors && { hasColors: true })
             };
 
-            // 1. Inject into array layout memory
             catalogProducts.push(newProductObj);
-
-            // 2. SAVE IT TO LOCALSTORAGE PERMANENTLY
             localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
 
-            // 3. Provision empty initial inventory size tracks
+            // Provision inventory slots
             const targetSizes = sizesConfig[typeInput] || [];
             targetSizes.forEach(sz => {
-                ownerInventory[`${nextId}_${sz}`] = 10; 
+                const colorSuffixes = hasColors ? ["_Black", "_White"] : [""];
+                colorSuffixes.forEach(c => {
+                    ownerInventory[`${nextId}_${sz}${c}`] = 10;
+                });
             });
 
-            // 4. Force grid interface layout redraw
             renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
             syncCatalogUIElements();
             syncAdminSizeOptions();
-            
+
+            // Reset form state
             adminAddProductForm.reset();
+            uploadedDataUrl = null;
+            if (dropzoneInner) dropzoneInner.style.display = "flex";
+            if (dropzonePreview) dropzonePreview.style.display = "none";
+            const strip = document.getElementById("imgLivePreviewStrip");
+            if (strip) strip.style.display = "none";
+
             showAlert('success', '✨', `"${titleInput}" drop deployed successfully!`);
         });
     }
 
+    // =========================================================
+    // FEATURE 2: COMPREHENSIVE DYNAMIC DISCOUNT MANAGER
+    // =========================================================
+
+    const discountOnSaleToggle = document.getElementById("discountOnSaleToggle");
+    const discountControlsGroup = document.getElementById("discountControlsGroup");
+    const catalogDiscountInput = document.getElementById("catalogDiscount");
+    const catalogFixedPriceInput = document.getElementById("catalogFixedPrice");
+    const discountPreviewRow = document.getElementById("discountPreviewRow");
+
+    // When the product selector changes, load its current discount state
+    if (catalogTargetSelect) {
+        catalogTargetSelect.addEventListener("change", refreshDiscountManagerUI);
+    }
+
+    function refreshDiscountManagerUI() {
+        if (!catalogTargetSelect) return;
+        const selectedId = catalogTargetSelect.value;
+        const product = catalogProducts.find(p => p.id === selectedId);
+
+        const currentPriceRow = document.getElementById("discountCurrentPriceRow");
+        const currentPriceVal = document.getElementById("discountCurrentPriceVal");
+
+        if (!product) {
+            if (currentPriceRow) currentPriceRow.style.display = "none";
+            if (discountOnSaleToggle) discountOnSaleToggle.checked = false;
+            if (discountControlsGroup) discountControlsGroup.style.display = "none";
+            if (discountPreviewRow) discountPreviewRow.style.display = "none";
+            return;
+        }
+
+        // Show base price
+        if (currentPriceRow) currentPriceRow.style.display = "block";
+        if (currentPriceVal) currentPriceVal.textContent = `${product.price} EGP`;
+
+        // Reflect existing discount state
+        const hasDiscount = !!product.discountPrice;
+        if (discountOnSaleToggle) discountOnSaleToggle.checked = hasDiscount;
+        if (discountControlsGroup) discountControlsGroup.style.display = hasDiscount ? "block" : "none";
+
+        if (hasDiscount) {
+            if (catalogDiscountInput) catalogDiscountInput.value = product.discountPercent || "";
+            if (catalogFixedPriceInput) catalogFixedPriceInput.value = product.discountPrice || "";
+            updateDiscountPreview(product.price);
+        } else {
+            if (catalogDiscountInput) catalogDiscountInput.value = "";
+            if (catalogFixedPriceInput) catalogFixedPriceInput.value = "";
+            if (discountPreviewRow) discountPreviewRow.style.display = "none";
+        }
+    }
+
+    // Toggle: show/hide discount controls
+    if (discountOnSaleToggle) {
+        discountOnSaleToggle.addEventListener("change", () => {
+            if (discountControlsGroup) {
+                discountControlsGroup.style.display = discountOnSaleToggle.checked ? "block" : "none";
+            }
+            if (!discountOnSaleToggle.checked && discountPreviewRow) {
+                discountPreviewRow.style.display = "none";
+            }
+        });
+    }
+
+    // Live preview: recalculate whenever % or fixed price changes
+    function updateDiscountPreview(basePrice) {
+        if (!discountPreviewRow) return;
+        const percentVal = parseInt(catalogDiscountInput && catalogDiscountInput.value) || 0;
+        const fixedVal = parseFloat(catalogFixedPriceInput && catalogFixedPriceInput.value) || 0;
+
+        let salePrice = null;
+        let badgeText = "";
+
+        if (fixedVal > 0 && fixedVal < basePrice) {
+            salePrice = fixedVal;
+            const pct = Math.round(((basePrice - fixedVal) / basePrice) * 100);
+            badgeText = `-${pct}%`;
+        } else if (percentVal > 0 && percentVal < 100) {
+            salePrice = Math.round(basePrice * (1 - percentVal / 100));
+            badgeText = `-${percentVal}%`;
+        }
+
+        if (salePrice !== null) {
+            discountPreviewRow.style.display = "block";
+            const oldEl = document.getElementById("discountPreviewOld");
+            const newEl = document.getElementById("discountPreviewNew");
+            const badgeEl = document.getElementById("discountPreviewBadge");
+            if (oldEl) oldEl.textContent = `${basePrice} EGP`;
+            if (newEl) newEl.textContent = `${salePrice} EGP`;
+            if (badgeEl) badgeEl.textContent = badgeText;
+        } else {
+            discountPreviewRow.style.display = "none";
+        }
+    }
+
+    if (catalogDiscountInput) {
+        catalogDiscountInput.addEventListener("input", () => {
+            // Clear fixed price when % is typed
+            if (catalogFixedPriceInput && catalogDiscountInput.value) catalogFixedPriceInput.value = "";
+            const selected = catalogProducts.find(p => p.id === catalogTargetSelect.value);
+            if (selected) updateDiscountPreview(selected.price);
+        });
+    }
+
+    if (catalogFixedPriceInput) {
+        catalogFixedPriceInput.addEventListener("input", () => {
+            // Clear percent when fixed price is typed
+            if (catalogDiscountInput && catalogFixedPriceInput.value) catalogDiscountInput.value = "";
+            const selected = catalogProducts.find(p => p.id === catalogTargetSelect.value);
+            if (selected) updateDiscountPreview(selected.price);
+        });
+    }
+
+    // Apply Changes button
     if (updateCatalogBtn) {
         updateCatalogBtn.addEventListener("click", () => {
             const selectedId = catalogTargetSelect.value;
             if (!selectedId) {
-                showAlert('error', '✕', 'Select an item to update!');
+                showAlert('error', '✕', 'Select a product first!');
                 return;
             }
 
             const targetProduct = catalogProducts.find(p => p.id === selectedId);
-            const discountPercent = parseInt(document.getElementById("catalogDiscount").value) || 0;
+            if (!targetProduct) return;
 
-            if (targetProduct) {
-                const originalPrice = targetProduct.price;
-                
-                if (discountPercent > 0) {
-                    const deduction = originalPrice * (discountPercent / 100);
-                    const finalDiscountPrice = Math.round(originalPrice - deduction);
-                    targetProduct.discountPrice = finalDiscountPrice;
-                } else {
-                    delete targetProduct.discountPrice;
-                }
+            const onSale = discountOnSaleToggle && discountOnSaleToggle.checked;
 
-                // Save dynamic price alterations directly into persistent storage tracking
+            if (!onSale) {
+                // Remove discount entirely
+                delete targetProduct.discountPrice;
+                delete targetProduct.discountPercent;
                 localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
-
-                // Force grid elements layout interface redrawing loop instantly
                 renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
-                showAlert('success', '⚡', `Pricing engine modified for ${targetProduct.name}!`);
+                syncCatalogUIElements();
+                showAlert('success', '⚡', `Sale removed from "${targetProduct.name}".`);
+                return;
             }
+
+            // Resolve final sale price (fixed takes precedence, else % calc)
+            const fixedVal = parseFloat(catalogFixedPriceInput && catalogFixedPriceInput.value) || 0;
+            const percentVal = parseInt(catalogDiscountInput && catalogDiscountInput.value) || 0;
+            let finalSalePrice = null;
+            let savedPercent = 0;
+
+            if (fixedVal > 0 && fixedVal < targetProduct.price) {
+                finalSalePrice = fixedVal;
+                savedPercent = Math.round(((targetProduct.price - fixedVal) / targetProduct.price) * 100);
+            } else if (percentVal > 0 && percentVal < 100) {
+                finalSalePrice = Math.round(targetProduct.price * (1 - percentVal / 100));
+                savedPercent = percentVal;
+            } else {
+                showAlert('error', '✕', 'Enter a valid discount % or fixed sale price.');
+                return;
+            }
+
+            targetProduct.discountPrice = finalSalePrice;
+            targetProduct.discountPercent = savedPercent;
+            localStorage.setItem("ko_catalog", JSON.stringify(catalogProducts));
+            renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToModal);
+            syncCatalogUIElements();
+
+            showAlert('success', '🏷️', `"${targetProduct.name}" is now on sale for ${finalSalePrice} EGP (${savedPercent}% off)!`);
         });
     }
 
