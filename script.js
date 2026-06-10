@@ -110,7 +110,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const modalImg = document.getElementById("modalImg");
     const modalName = document.getElementById("modalName");
     const modalPrice = document.getElementById("modalPrice");
-    const sizeSelect = document.getElementById("sizeSelect");
+    // --- Size Pill Shim (replaces <select> with pill buttons) ---
+    const sizePillsContainer = document.getElementById("sizePills");
+    const sizeSelect = {
+        get value() {
+            const active = sizePillsContainer.querySelector(".size-pill.active");
+            return active ? active.dataset.size : "";
+        }
+    };
     const orderBtn = document.getElementById("orderBtn");
     const colorSection = document.getElementById("modalColorSection");
     const colorDots = document.querySelectorAll(".color-dot");
@@ -169,9 +176,27 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("scroll", revealCards);
 // --- Safe Cart Toggle Animations ---
    
-    cartIcon.addEventListener("click", () => cartSidebar.classList.add("open"));
-    closeCartBtn.addEventListener("click", () => cartSidebar.classList.remove("open"));
+    // --- Safe Cart Toggle Animations ---
+    const cartOverlay = document.getElementById("cartOverlay");
 
+    const openCart = () => {
+        cartSidebar.classList.add("open");
+        if (cartOverlay) cartOverlay.classList.add("active");
+        // Prevent background document scrolling when full screen cart is open on phone
+        document.body.style.overflow = "hidden";
+    };
+
+    const closeCart = () => {
+        cartSidebar.classList.remove("open");
+        if (cartOverlay) cartOverlay.classList.remove("active");
+        document.body.style.overflow = "";
+    };
+
+    cartIcon.addEventListener("click", openCart);
+    closeCartBtn.addEventListener("click", closeCart);
+    if (cartOverlay) {
+        cartOverlay.addEventListener("click", closeCart);
+    }
     // --- Dynamic Stock Verifier ---
     const checkCurrentVariantStock = () => {
         const size = sizeSelect.value;
@@ -201,7 +226,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    sizeSelect.addEventListener("change", checkCurrentVariantStock);
+    sizePillsContainer.addEventListener("click", (e) => {
+        const pill = e.target.closest(".size-pill");
+        if (!pill) return;
+        sizePillsContainer.querySelectorAll(".size-pill").forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+        checkCurrentVariantStock();
+    });
 
     colorDots.forEach(dot => {
         dot.addEventListener("click", () => {
@@ -239,13 +270,15 @@ document.addEventListener("DOMContentLoaded", () => {
             selectedColor = ""; 
         }
 
-        sizeSelect.innerHTML = "";
+        sizePillsContainer.innerHTML = "";
         const sizes = sizesConfig[currentProductType] || [];
-        sizes.forEach(size => {
-            const option = document.createElement("option");
-            option.value = size;
-            option.textContent = size;
-            sizeSelect.appendChild(option);
+        sizes.forEach((size, i) => {
+            const pill = document.createElement("button");
+            pill.type = "button";
+            pill.className = "size-pill" + (i === 0 ? " active" : "");
+            pill.dataset.size = size;
+            pill.textContent = size;
+            sizePillsContainer.appendChild(pill);
         });
 
         checkCurrentVariantStock();
@@ -279,6 +312,9 @@ document.addEventListener("DOMContentLoaded", () => {
         closeModal();
         updateCartUI();
         cartSidebar.classList.add("open"); 
+        // Inside the orderBtn click event listener where the cart sidebar opens automatically:
+    updateCartUI();
+    openCart(); // Call the unified open function instead of just cartSidebar.classList.add("open");
     });
 
     // --- Cart Sidebar Engine ---
@@ -346,6 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
             cartItemsContainer.insertAdjacentHTML("beforeend", itemHTML);
         });
         cartTotalElement.textContent = `${orderTotalAccumulator} EGP`;
+        
     }
 
     // --- CHECKOUT PAGE NAVIGATION SWITCHES ---
