@@ -335,53 +335,15 @@ nav a:hover {
 .size-section { margin-bottom: 25px; }
 .size-section label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.9rem; }
 
-/* --- Size Pill Selector --- */
-.size-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.size-pill {
-    padding: 8px 18px;
-    background: transparent;
-    color: var(--text-muted);
-    border: 1px solid var(--border-color);
-    border-radius: 2px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: inherit;
-}
-
-.size-pill:hover {
-    border-color: rgba(255,255,255,0.4);
+#sizeSelect {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--bg-color);
     color: var(--text-light);
-}
-
-.size-pill.active {
-    background: var(--accent-color);
-    border-color: var(--accent-color);
-    color: var(--bg-color);
-}
-
-/* Light mode overrides */
-body.light-mode .size-pill {
-    color: #777;
-    border-color: #ccc;
-}
-body.light-mode .size-pill:hover {
-    border-color: #555;
-    color: #222;
-}
-body.light-mode .size-pill.active {
-    background: #111;
-    border-color: #111;
-    color: #fff;
-}
+    border: 1px solid var(--border-color);
+    font-size: 1rem;
+    outline: none;
+    cursor: pointer;
 }
 
 .order-btn { width: 100%; padding: 12px; }
@@ -2440,103 +2402,8 @@ body.light-mode .admin-toggle-slider::after {
     box-shadow: 0 2px 8px rgba(255, 59, 48, 0.4);
     animation: zoomIn 0.25s ease forwards;
 }
-@media (max-width: 768px) {
-    .cart-sidebar {
-        width: 100%; /* Spans full screen on mobile */
-    }
-}
-/* --- Overlay Backdrop Styling --- */
-.cart-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(3px);
-    z-index: 2999; /* Positioned right behind the cart-sidebar */
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-}
-.cart-overlay.active {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-/* --- Mobile Breakpoint Optimizations --- */
-@media (max-width: 768px) {
-   /* --- Dedicated Mobile Fixes --- */
-@media (max-width: 768px) {
-    .cart-sidebar {
-        /* Instead of width: 100%, pinning edges eliminates layout calculation overflows */
-        left: 0 !important;
-        right: 0 !important;
-        width: auto !important; 
-        border-left: none;
-        box-shadow: none;
-        
-        /* Ensures the transform completely disappears off right edge cleanly */
-        transform: translateX(100vw); 
-    }
-
-    /* Keeps the sidebar active toggle perfectly matched */
-    .cart-sidebar.open {
-        transform: translateX(0) !important;
-    }
-
-    /* Padding adjustments so layout fits smaller touchscreens */
-    .cart-header {
-        padding: 16px 20px;
-    }
-    
-    .cart-body {
-        padding: 16px 20px;
-    }
-
-    .cart-footer {
-        padding: 20px;
-        /* Adds safe-padding for modern mobile screens (like iPhone home bars) */
-        padding-bottom: calc(20px + env(safe-area-inset-bottom));
-    }
-} /* Optimize the individual item rows to look perfect in tight container grids */
-    .cart-item {
-        padding: 10px;
-        gap: 12px;
-    }
-
-    .cart-item img {
-        width: 50px;
-        height: 65px; /* Scales down images safely */
-    }
-
-    .cart-item-details h4 {
-        font-size: 0.95rem; /* Prevents overflow of product name titles */
-    }
-
-    .cart-item-qty {
-        gap: 12px; /* Leaves more room for finger tapping adjustments */
-    }
-
-    .qty-btn {
-        width: 28px;  /* Enhances the plus and minus button touch targets */
-        height: 28px;
-        font-size: 1rem;
-    }
-
-    .remove-item-btn {
-        padding: 8px 5px; /* Easier to tap trash icon link */
-    }
-
-    .cart-footer {
-        padding: 20px;
-        /* Adds extra padding at the bottom to prevent mobile browser navigation overlay overlaps */
-        padding-bottom: calc(20px + env(safe-area-inset-bottom)); 
-        background-color: #0c0c0c;
-    }
-    
-    .total-row {
-        font-size: 1.1rem;
-        margin-bottom: 15px;
-    }
+.hero {
+    background: 
+        linear-gradient(rgba(11, 11, 11, 0.199), rgba(11, 11, 11, 0.75)), 
+        url('bg.jpg') center/cover no-repeat; 
 }

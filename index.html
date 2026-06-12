@@ -14,6 +14,8 @@
       });
    })();
 </script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
 </head>
 <body>
@@ -132,8 +134,8 @@
                     </div>
 
                     <div class="size-section">
-                        <label>Select Size:</label>
-                        <div id="sizePills" class="size-pills"></div>
+                        <label for="sizeSelect">Select Size:</label>
+                        <select id="sizeSelect"></select>
                     </div>
 
                     <button class="btn order-btn" id="orderBtn">Add To Cart</button>
@@ -143,7 +145,7 @@
     </div>
 
     <!-- Sliding Sidebar Cart Feature -->
-     <div id="cartOverlay" class="cart-overlay"></div>
+     <!-- <div id="cartOverlay" class="cart-overlay"></div> -->
     <div id="cartSidebar" class="cart-sidebar">
         <div class="cart-header">
             <h2>Your Cart</h2>
@@ -241,8 +243,7 @@
     </section>
 
     <!-- Footer -->
-    <footer id="footer">
-        <!-- Footer -->
+
     <footer id="footer">
         <div class="footer-container">
             <!-- Left Column: Member Login -->
@@ -272,7 +273,7 @@
 
                     <button type="submit" class="btn" id="authLoginBtn">Sign In</button>
                     <p id="authMsg" class="admin-login-msg"></p>
-                    <p class="auth-signup-link">Don't have an account? <a href="#footer" id="authSignUpLink">Sign up</a></p>
+<p class="auth-signup-link">Don't have an account? <a href="#" id="authSignUpLink">Sign up</a></p>
                 </form>
 
                 <!-- Logged-in State (hidden by default) -->
