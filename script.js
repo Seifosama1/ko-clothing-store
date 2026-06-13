@@ -53,6 +53,7 @@ function renderShopGridFromCatalog(catalogProducts, sizesConfig, bindProductToMo
                 <div class="product-img-wrapper">
                     <img src="${prod.img}" alt="${prod.name}">
                 </div>
+                <button class="wishlist-btn-card" data-id="${prod.id}" title="Add to Wishlist" onclick="toggleWishlist(event, '${prod.id}', '${prod.name.replace(/'/g, "\\'")}', '${displayPrice}', '${prod.img}')">♡</button>
                 <div class="product-info">
                     <h3>${prod.name}</h3>
                     <p class="price" id="store-price-${prod.id}">${priceHTML}</p>
@@ -1187,12 +1188,24 @@ if (authSignUpLink) {
                 const receiptBtnHTML = order.receipt_url
                     ? `<a href="${order.receipt_url}" target="_blank" class="btn-view-receipt">📎 View Receipt</a>`
                     : '';
+                
+                const currentStatus = order.status || 'Pending';
+                const statusHTML = `
+                    <select class="admin-status-select status-${currentStatus.toLowerCase()}" onchange="updateOrderStatus('${order.id}', this.value, this)">
+                        <option value="Pending" ${currentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
+                        <option value="Processing" ${currentStatus === 'Processing' ? 'selected' : ''}>Processing</option>
+                        <option value="Shipped" ${currentStatus === 'Shipped' ? 'selected' : ''}>Shipped</option>
+                        <option value="Delivered" ${currentStatus === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                        <option value="Cancelled" ${currentStatus === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                    </select>
+                `;
 
                 orderLogContainer.insertAdjacentHTML('beforeend', `
                     <div class="admin-order-card">
                         <div class="admin-order-header">
                             <span class="admin-order-id">${order.order_id || '#KO-UNKNWN'}</span>
                             <span class="admin-order-total">${order.total} EGP</span>
+                            ${statusHTML}
                         </div>
                         <div style="font-size:0.72rem;color:#555;padding:0 0 6px 0;">
                             ${order.payment_method || ''}
@@ -1641,4 +1654,211 @@ if (authSignUpLink) {
     syncCatalogUIElements();
     syncAdminSizeOptions();
     revealCards();
+    updateWishlistUI();
 });
+
+// ============================================================
+// WISHLIST, TRACKING & ADMIN STATUS GLOBALS
+// ============================================================
+
+let wishlist = JSON.parse(localStorage.getItem('ko_wishlist') || '[]');
+
+function saveWishlist() {
+    localStorage.setItem('ko_wishlist', JSON.stringify(wishlist));
+    updateWishlistUI();
+}
+
+window.toggleWishlist = (e, id, name, price, img) => {
+    e.stopPropagation();
+    const existingIndex = wishlist.findIndex(item => item.id === id);
+    if (existingIndex >= 0) {
+        wishlist.splice(existingIndex, 1);
+    } else {
+        wishlist.push({ id, name, price, img });
+    }
+    saveWishlist();
+};
+
+window.removeFromWishlist = (index) => {
+    wishlist.splice(index, 1);
+    saveWishlist();
+};
+
+window.moveToCartFromWishlist = (index) => {
+    const item = wishlist[index];
+    const card = document.querySelector(`.product-card[data-id="${item.id}"]`);
+    if (card) {
+        document.getElementById('wishlistSidebar').classList.remove('open');
+        window.triggerModalBinding(card);
+    }
+};
+
+function updateWishlistUI() {
+    const wishlistCount = document.getElementById('wishlistCount');
+    const wishlistItemsContainer = document.getElementById('wishlistItemsContainer');
+    
+    if (wishlistCount) {
+        wishlistCount.textContent = wishlist.length;
+        wishlistCount.style.display = wishlist.length > 0 ? 'flex' : 'none';
+        wishlistCount.classList.remove('badge-pulse');
+        void wishlistCount.offsetWidth;
+        if (wishlist.length > 0) wishlistCount.classList.add('badge-pulse');
+    }
+
+    if (wishlistItemsContainer) {
+        wishlistItemsContainer.innerHTML = '';
+        if (wishlist.length === 0) {
+            wishlistItemsContainer.innerHTML = '<p class="empty-msg">Your wishlist is empty.</p>';
+        } else {
+            wishlist.forEach((item, index) => {
+                wishlistItemsContainer.insertAdjacentHTML('beforeend', `
+                    <div class="wishlist-item">
+                        <img src="${item.img}" alt="${item.name}">
+                        <div class="wishlist-item-details">
+                            <div class="wishlist-item-title">${item.name}</div>
+                            <div style="font-size: 0.8rem; color: #888;">${item.price} EGP</div>
+                            <div class="wishlist-item-actions">
+                                <button class="wishlist-move-btn" onclick="moveToCartFromWishlist(${index})">View Details</button>
+                                <button class="wishlist-remove-btn" onclick="removeFromWishlist(${index})">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+    }
+
+    document.querySelectorAll('.wishlist-btn-card').forEach(btn => {
+        const id = btn.getAttribute('data-id');
+        const inWishlist = wishlist.some(item => item.id === id);
+        if (inWishlist) {
+            btn.classList.add('active');
+            btn.innerHTML = '♥';
+        } else {
+            btn.classList.remove('active');
+            btn.innerHTML = '♡';
+        }
+    });
+}
+
+// Sidebar Toggles
+document.getElementById('wishlistIcon')?.addEventListener('click', () => {
+    document.getElementById('wishlistSidebar').classList.add('open');
+});
+document.getElementById('closeWishlistBtn')?.addEventListener('click', () => {
+    document.getElementById('wishlistSidebar').classList.remove('open');
+});
+
+// Order Tracking Logic
+const trackingModal = document.getElementById('trackingModal');
+document.getElementById('trackOrderNav')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    trackingModal.style.display = 'flex';
+});
+document.getElementById('closeTrackingBtn')?.addEventListener('click', () => {
+    trackingModal.style.display = 'none';
+    document.getElementById('trackingResultContainer').style.display = 'none';
+    document.getElementById('trackOrderIdInput').value = '';
+});
+
+document.getElementById('trackOrderBtn')?.addEventListener('click', async () => {
+    const input = document.getElementById('trackOrderIdInput').value.trim().toUpperCase();
+    if (!input) {
+        showAlert('error', '✕', 'Please enter a valid Order ID.');
+        return;
+    }
+    
+    document.getElementById('trackOrderBtn').textContent = 'Searching...';
+    const { data, error } = await sb.from('orders').select('*').eq('order_id', input).single();
+    document.getElementById('trackOrderBtn').textContent = 'Track';
+
+    const resultContainer = document.getElementById('trackingResultContainer');
+    if (error || !data) {
+        resultContainer.style.display = 'block';
+        resultContainer.innerHTML = '<p style="color: #ff3b30;">Order not found. Please check your Order ID and try again.</p>';
+    } else {
+        const statusColors = {
+            'Pending': '#ff9500',
+            'Processing': '#5ac8fa',
+            'Shipped': '#007aff',
+            'Delivered': '#34c759',
+            'Cancelled': '#ff3b30'
+        };
+        const status = data.status || 'Pending';
+        const color = statusColors[status] || '#fff';
+        
+        let itemsHtml = (data.items || []).map(item => `
+            <div style="font-size: 0.85rem; margin-bottom: 5px; color: #aaa;">
+                - ${item.name} x${item.qty} (${item.color ? item.size + '/' + item.color : item.size})
+            </div>
+        `).join('');
+
+        resultContainer.style.display = 'block';
+        resultContainer.innerHTML = `
+            <h3 style="margin-bottom: 15px;">Order ${data.order_id}</h3>
+            <p style="margin-bottom: 10px;">Status: <strong style="color: ${color};">${status}</strong></p>
+            <p style="margin-bottom: 10px;">Total: <strong>${data.total} EGP</strong></p>
+            <div style="margin-top: 15px;">
+                <p style="font-size: 0.9rem; margin-bottom: 8px;">Items Ordered:</p>
+                ${itemsHtml}
+            </div>
+        `;
+    }
+});
+
+// Admin Order Status Update
+window.updateOrderStatus = async (id, newStatus, selectElement) => {
+    const originalValue = selectElement.value;
+    selectElement.disabled = true;
+    
+    const { error } = await sb.from('orders').update({ status: newStatus }).eq('id', id);
+    
+    selectElement.disabled = false;
+    if (error) {
+        showAlert('error', '✕', 'Failed to update order status.');
+        selectElement.value = originalValue; // Revert on failure
+    } else {
+        showAlert('success', '✓', 'Order status updated to ' + newStatus);
+        selectElement.className = 'admin-status-select status-' + newStatus.toLowerCase();
+        
+        // Update local cache
+        const order = adminOrdersCache.find(o => o.id === id);
+        if (order) {
+            const oldStatus = order.status;
+            order.status = newStatus;
+            
+            if (newStatus === 'Shipped' && oldStatus !== 'Shipped') {
+                if (typeof window.sendShippingEmail === 'function') {
+                    window.sendShippingEmail(order);
+                }
+            }
+        }
+    }
+};
+
+window.sendShippingEmail = (order) => {
+    if (!order || !order.customer_email) return;
+
+    let orderItemsText = '';
+    (order.items || []).forEach(item => {
+        const variantMeta = item.color ? ` (${item.size} / ${item.color})` : ` (${item.size})`;
+        orderItemsText += `${item.name} x ${item.qty}${variantMeta}\n`;
+    });
+
+    const estimatedDelivery = new Date();
+    estimatedDelivery.setDate(estimatedDelivery.getDate() + 3);
+    const deliveryDateStr = estimatedDelivery.toLocaleDateString('en-GB');
+
+    emailjs.send('service_3savc39', 'template_77ikkze', {
+        customer_name:    order.customer_name || 'Customer',
+        customer_email:   order.customer_email,
+        email:            order.customer_email,
+        order_number:     order.order_id,
+        date:             deliveryDateStr,
+        order_items:      orderItemsText,
+        shipping_address: order.customer_address || 'Address provided at checkout',
+        support_page:     'https://ko-clothing-store.vercel.app/'
+    }, 'YgbAzTbtF11flkfqk')
+    .then(r => console.log('Shipping email sent:', r.status))
+    .catch(err => console.error('Shipping email failed:', err));
+};
