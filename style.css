@@ -2503,3 +2503,229 @@ body.light-mode .stock-status-badge {
         box-shadow: 0 0 0 0 rgba(255, 59, 48, 0);
     }
 }
+
+/* ============================================================
+   RECEIPT UPLOAD ZONE — InstaPay / Vodafone Cash
+   ============================================================ */
+
+.receipt-upload-group {
+    animation: fadeInUp 0.35s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+.receipt-upload-label {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+.receipt-required-star {
+    color: #ff3b30;
+    font-size: 0.9rem;
+}
+
+.receipt-label-sub {
+    font-size: 0.75rem;
+    color: #555;
+    text-transform: none;
+    letter-spacing: 0;
+    font-style: italic;
+}
+
+/* The dashed dropzone box */
+.receipt-dropzone {
+    border: 2px dashed #2a2a2a;
+    border-radius: 8px;
+    background: #0d0d0d;
+    transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+}
+
+.receipt-dropzone:hover,
+.receipt-dropzone.drag-over {
+    border-color: rgba(255,255,255,0.35);
+    background: #121212;
+    box-shadow: 0 0 20px rgba(255,255,255,0.04);
+}
+
+/* Empty / prompt state */
+.receipt-dropzone-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    gap: 8px;
+    text-align: center;
+}
+
+.receipt-upload-icon {
+    width: 38px;
+    height: 38px;
+    color: #444;
+    margin-bottom: 4px;
+    transition: color 0.25s ease;
+}
+
+.receipt-dropzone:hover .receipt-upload-icon,
+.receipt-dropzone.drag-over .receipt-upload-icon {
+    color: #888;
+}
+
+.receipt-drop-text {
+    font-size: 0.88rem;
+    color: #666;
+    line-height: 1.4;
+}
+
+.receipt-browse-link {
+    color: #bbb;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.receipt-browse-link:hover { color: #fff; }
+
+.receipt-drop-hint {
+    font-size: 0.72rem;
+    color: #3a3a3a;
+    letter-spacing: 0.3px;
+}
+
+/* Preview state (after file chosen) */
+.receipt-dropzone-preview {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+}
+
+.receipt-preview-img {
+    width: 72px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #222;
+    flex-shrink: 0;
+}
+
+.receipt-preview-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.receipt-file-name {
+    font-size: 0.8rem;
+    color: #aaa;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.receipt-clear-btn {
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    color: #ff3b30;
+    cursor: pointer;
+    font-size: 0.78rem;
+    padding: 5px 10px;
+    border-radius: 4px;
+    align-self: flex-start;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.receipt-clear-btn:hover {
+    background: rgba(255,59,48,0.1);
+    border-color: #ff3b30;
+}
+
+/* Upload progress bar */
+.receipt-upload-progress {
+    margin-top: 8px;
+    position: relative;
+    background: #111;
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+}
+
+.receipt-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #fff 0%, #aaa 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    animation: shimmer-progress 1.5s infinite;
+}
+
+.receipt-progress-text {
+    display: block;
+    font-size: 0.72rem;
+    color: #555;
+    margin-top: 5px;
+    text-align: center;
+    letter-spacing: 0.3px;
+}
+
+@keyframes shimmer-progress {
+    0%   { filter: brightness(1); }
+    50%  { filter: brightness(1.4); }
+    100% { filter: brightness(1); }
+}
+
+/* Light mode overrides */
+body.light-mode .receipt-dropzone {
+    border-color: #ddd;
+    background: #f9f9f9;
+}
+
+body.light-mode .receipt-dropzone:hover,
+body.light-mode .receipt-dropzone.drag-over {
+    border-color: #999;
+    background: #f2f2f2;
+}
+
+body.light-mode .receipt-upload-icon { color: #bbb; }
+body.light-mode .receipt-dropzone:hover .receipt-upload-icon { color: #777; }
+body.light-mode .receipt-drop-text { color: #999; }
+body.light-mode .receipt-browse-link { color: #444; }
+body.light-mode .receipt-drop-hint { color: #bbb; }
+body.light-mode .receipt-upload-label { color: #666; }
+body.light-mode .receipt-label-sub { color: #aaa; }
+body.light-mode .receipt-file-name { color: #555; }
+body.light-mode .receipt-upload-progress { background: #eee; }
+
+/* Admin order — view receipt button */
+.btn-view-receipt {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    color: #aaa;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+    margin-top: 6px;
+}
+
+.btn-view-receipt:hover {
+    border-color: #fff;
+    color: #fff;
+    background: rgba(255,255,255,0.05);
+}

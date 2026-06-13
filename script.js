@@ -294,6 +294,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     const summaryGrandTotal      = document.getElementById('summaryGrandTotal');
     const checkoutForm           = document.getElementById('checkoutForm');
 
+    // ── Receipt Upload DOM refs ──
+    const payMethodSelect        = document.getElementById('payMethod');
+    const receiptUploadGroup     = document.getElementById('receiptUploadGroup');
+    const receiptDropzone        = document.getElementById('receiptDropzone');
+    const receiptFileInput       = document.getElementById('receiptFile');
+    const receiptBrowseBtn       = document.getElementById('receiptBrowseBtn');
+    const receiptDropzoneInner   = document.getElementById('receiptDropzoneInner');
+    const receiptDropzonePreview = document.getElementById('receiptDropzonePreview');
+    const receiptPreviewImg      = document.getElementById('receiptPreviewImg');
+    const receiptFileNameEl      = document.getElementById('receiptFileName');
+    const receiptClearBtn        = document.getElementById('receiptClearBtn');
+    const receiptUploadProgress  = document.getElementById('receiptUploadProgress');
+    const receiptProgressBar     = document.getElementById('receiptProgressBar');
+    const receiptProgressText    = document.getElementById('receiptProgressText');
+    let   selectedReceiptFile    = null;
+
     const adminProdSelect  = document.getElementById('adminProductSelect');
     const adminColorGroup  = document.getElementById('adminColorGroup');
     const adminColorSelect = document.getElementById('adminColorSelect');
@@ -552,6 +568,79 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     backToShopBtn.addEventListener('click', () => checkoutPage.classList.remove('open'));
 
+    // ── Receipt Upload — show/hide zone on payment method change ──
+    if (payMethodSelect) {
+        payMethodSelect.addEventListener('change', () => {
+            const isInstaPay = payMethodSelect.value === 'InstaPay';
+            receiptUploadGroup.style.display = isInstaPay ? 'block' : 'none';
+            if (!isInstaPay) {
+                // Clear any selected file when switching away
+                selectedReceiptFile = null;
+                receiptFileInput.value = '';
+                receiptDropzoneInner.style.display   = 'flex';
+                receiptDropzonePreview.style.display = 'none';
+                receiptUploadProgress.style.display  = 'none';
+            }
+        });
+    }
+
+    // ── Receipt Dropzone — click/browse ──
+    if (receiptBrowseBtn) {
+        receiptBrowseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            receiptFileInput && receiptFileInput.click();
+        });
+    }
+    if (receiptDropzone) {
+        receiptDropzone.addEventListener('click', () => {
+            if (receiptDropzoneInner.style.display !== 'none') receiptFileInput.click();
+        });
+        receiptDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            receiptDropzone.classList.add('drag-over');
+        });
+        receiptDropzone.addEventListener('dragleave', () => {
+            receiptDropzone.classList.remove('drag-over');
+        });
+        receiptDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            receiptDropzone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) handleReceiptFile(file);
+        });
+    }
+    if (receiptFileInput) {
+        receiptFileInput.addEventListener('change', () => {
+            if (receiptFileInput.files[0]) handleReceiptFile(receiptFileInput.files[0]);
+        });
+    }
+    if (receiptClearBtn) {
+        receiptClearBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectedReceiptFile = null;
+            receiptFileInput.value = '';
+            receiptDropzoneInner.style.display   = 'flex';
+            receiptDropzonePreview.style.display = 'none';
+            receiptUploadProgress.style.display  = 'none';
+        });
+    }
+
+    function handleReceiptFile(file) {
+        if (file.size > 10 * 1024 * 1024) {
+            showAlert('error', '✕', 'Receipt image must be under 10 MB.');
+            return;
+        }
+        selectedReceiptFile = file;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            receiptPreviewImg.src = ev.target.result;
+            receiptFileNameEl.textContent = file.name;
+            receiptDropzoneInner.style.display   = 'none';
+            receiptDropzonePreview.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+    }
+
     function buildCheckoutSummary() {
         summaryItemsContainer.innerHTML = '';
         let subtotal = 0;
@@ -580,8 +669,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const name    = document.getElementById('custName').value;
         const phone   = document.getElementById('custPhone').value.trim();
-        
-        // Egyptian phone number validation: starts with 010, 011, 012, or 015 and is exactly 11 digits
+
+        // Egyptian phone number validation
         const egPhonePattern = /^01[0125]\d{8}$/;
         if (!egPhonePattern.test(phone)) {
             showAlert('error', '✕', 'Please enter a valid Egyptian phone number (e.g. 01012345678)');
@@ -593,14 +682,58 @@ document.addEventListener('DOMContentLoaded', async () => {
         const city    = document.getElementById('custCity').value;
         const method  = document.getElementById('payMethod').value;
 
-        // Send confirmation email (unchanged)
-        sendConfirmationEmail(name, email, phone, address, city, method);
+        // ── Validate receipt is uploaded for InstaPay ──
+        if (method === 'InstaPay' && !selectedReceiptFile) {
+            showAlert('error', '✕', 'Please upload your payment receipt to continue.');
+            receiptDropzone && receiptDropzone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
 
-        const itemsTotal    = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const grandTotal    = itemsTotal + 50;
-        const orderId       = '#KO-' + Math.floor(10000 + Math.random() * 90000);
+        const itemsTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const grandTotal = itemsTotal + 50;
+        const orderId    = '#KO-' + Math.floor(10000 + Math.random() * 90000);
         const { data: { user } } = await sb.auth.getUser();
 
+        // ── Upload receipt to Supabase Storage ──
+        let receiptUrl = null;
+        if (method === 'InstaPay' && selectedReceiptFile) {
+            try {
+                // Show progress bar
+                receiptUploadProgress.style.display = 'block';
+                receiptProgressBar.style.width      = '30%';
+                receiptProgressText.textContent     = 'Uploading receipt…';
+
+                const ext      = selectedReceiptFile.name.split('.').pop();
+                const filename = `receipt_${orderId.replace('#', '')}_${Date.now()}.${ext}`;
+
+                const { data: uploadData, error: uploadError } = await sb.storage
+                    .from('receipts')
+                    .upload(filename, selectedReceiptFile, { contentType: selectedReceiptFile.type, upsert: false });
+
+                receiptProgressBar.style.width = '80%';
+
+                if (uploadError) {
+                    console.error('[Storage] Receipt upload failed:', uploadError);
+                    showAlert('error', '✕', 'Receipt upload failed. Please try again.');
+                    receiptUploadProgress.style.display = 'none';
+                    return;
+                }
+
+                const { data: urlData } = sb.storage.from('receipts').getPublicUrl(filename);
+                receiptUrl = urlData.publicUrl;
+
+                receiptProgressBar.style.width  = '100%';
+                receiptProgressText.textContent = 'Receipt uploaded ✓';
+
+            } catch (err) {
+                console.error('[Storage] Unexpected error:', err);
+                showAlert('error', '✕', 'An error occurred uploading the receipt.');
+                receiptUploadProgress.style.display = 'none';
+                return;
+            }
+        }
+
+        // ── Build order payload ──
         const orderPayload = {
             order_id:         orderId,
             customer_name:    name,
@@ -617,16 +750,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 size:  item.size,
                 color: item.color || ''
             })),
-            subtotal: itemsTotal,
-            total:    grandTotal,
-            user_id:  user ? user.id : null
+            subtotal:    itemsTotal,
+            total:       grandTotal,
+            user_id:     user ? user.id : null,
+            receipt_url: receiptUrl || null
         };
 
         const savedOrder = await dbSaveOrder(orderPayload);
         if (!savedOrder) {
             showAlert('error', '✕', 'Order failed to save. Please try again.');
+            receiptUploadProgress.style.display = 'none';
             return;
         }
+
+        // Send confirmation email with receipt URL
+        sendConfirmationEmail(name, email, phone, address, city, method, receiptUrl);
 
         // Decrement inventory in Supabase
         const inventoryUpdates = [];
@@ -644,6 +782,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         cart = [];
         updateCartUI();
         checkoutForm.reset();
+
+        // Reset receipt UI
+        selectedReceiptFile = null;
+        if (receiptFileInput)         receiptFileInput.value = '';
+        if (receiptDropzoneInner)     receiptDropzoneInner.style.display   = 'flex';
+        if (receiptDropzonePreview)   receiptDropzonePreview.style.display = 'none';
+        if (receiptUploadProgress)    receiptUploadProgress.style.display  = 'none';
+        if (receiptUploadGroup)       receiptUploadGroup.style.display      = 'none';
+
         checkoutPage.classList.remove('open');
     });
 
@@ -958,7 +1105,7 @@ if (authSignUpLink) {
     }
 
     // ── Order Confirmation Email ──
-    function sendConfirmationEmail(customerName, customerEmail, customerPhone, customerAddress, customerCity, paymentMethod) {
+    function sendConfirmationEmail(customerName, customerEmail, customerPhone, customerAddress, customerCity, paymentMethod, receiptUrl) {
         let orderItemsText = '';
         cart.forEach(item => {
             const variantMeta = item.color ? ` (${item.size} / ${item.color})` : ` (${item.size})`;
@@ -975,7 +1122,8 @@ if (authSignUpLink) {
             customer_address: `${customerAddress}, ${customerCity}`,
             payment_method:   paymentMethod,
             order_items:      orderItemsText,
-            total_price:      total
+            total_price:      total,
+            receipt_url:      receiptUrl || ''
         }, 'YgbAzTbtF11flkfqk')
         .then(r => console.log('Email sent:', r.status))
         .catch(err => console.error('Email failed:', err));
@@ -1036,11 +1184,19 @@ if (authSignUpLink) {
                         </div>
                     `;
                 });
+                const receiptBtnHTML = order.receipt_url
+                    ? `<a href="${order.receipt_url}" target="_blank" class="btn-view-receipt">📎 View Receipt</a>`
+                    : '';
+
                 orderLogContainer.insertAdjacentHTML('beforeend', `
                     <div class="admin-order-card">
                         <div class="admin-order-header">
                             <span class="admin-order-id">${order.order_id || '#KO-UNKNWN'}</span>
                             <span class="admin-order-total">${order.total} EGP</span>
+                        </div>
+                        <div style="font-size:0.72rem;color:#555;padding:0 0 6px 0;">
+                            ${order.payment_method || ''}
+                            ${receiptBtnHTML}
                         </div>
                         <div class="admin-order-body-items">${itemRowsHTML}</div>
                         <button class="btn-refund-order-all" onclick="processFullOrderMassRefund('${order.id}')">Refund Whole Order</button>
