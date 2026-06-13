@@ -521,6 +521,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateCartUI() {
         const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
         cartCountBadge.textContent = totalCount;
+        cartCountBadge.style.display = totalCount > 0 ? 'flex' : 'none';
         cartCountBadge.classList.remove('badge-pulse');
         void cartCountBadge.offsetWidth;
         if (totalCount > 0) cartCountBadge.classList.add('badge-pulse');
@@ -1747,6 +1748,26 @@ document.getElementById('wishlistIcon')?.addEventListener('click', () => {
 });
 document.getElementById('closeWishlistBtn')?.addEventListener('click', () => {
     document.getElementById('wishlistSidebar').classList.remove('open');
+});
+
+// Close sidebars when clicking outside
+document.addEventListener('click', (e) => {
+    const cartSidebar = document.getElementById('cartSidebar');
+    const wishlistSidebar = document.getElementById('wishlistSidebar');
+    const cartIcon = document.getElementById('cartIcon');
+    const wishlistIcon = document.getElementById('wishlistIcon');
+
+    if (cartSidebar && cartSidebar.classList.contains('open')) {
+        if (!cartSidebar.contains(e.target) && (!cartIcon || !cartIcon.contains(e.target))) {
+            cartSidebar.classList.remove('open');
+        }
+    }
+
+    if (wishlistSidebar && wishlistSidebar.classList.contains('open')) {
+        if (!wishlistSidebar.contains(e.target) && (!wishlistIcon || !wishlistIcon.contains(e.target))) {
+            wishlistSidebar.classList.remove('open');
+        }
+    }
 });
 
 // Order Tracking Logic
