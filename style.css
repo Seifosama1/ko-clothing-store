@@ -2407,3 +2407,79 @@ body.light-mode .admin-toggle-slider::after {
         linear-gradient(rgba(11, 11, 11, 0.199), rgba(11, 11, 11, 0.75)), 
         url('bg.jpg') center/cover no-repeat; 
 }
+
+/* ==========================================================================
+   UX/UI UPGRADES: GLASSMORPHISM, STOCK STATUS & MICRO-INTERACTIONS
+   ========================================================================== */
+
+/* Glassmorphism Styles */
+.modal-content, 
+.signup-modal-content, 
+.admin-modal-content, 
+.cart-sidebar {
+    background: rgba(15, 15, 15, 0.75) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5) !important;
+}
+
+body.light-mode .modal-content, 
+body.light-mode .signup-modal-content, 
+body.light-mode .admin-modal-content, 
+body.light-mode #cartSidebar {
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Stock Status Indicators */
+.stock-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin: 15px 0 10px 0;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    width: fit-content;
+}
+
+body.light-mode .stock-status-badge {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-dot.green {
+    background-color: #34c759;
+    box-shadow: 0 0 8px #34c759;
+    animation: statusPulse 1.5s infinite alternate;
+}
+
+.status-dot.yellow {
+    background-color: #ffcc00;
+    box-shadow: 0 0 8px #ffcc00;
+    animation: statusPulse 1.5s infinite alternate;
+}
+
+.status-dot.red {
+    background-color: #ff3b30;
+    box-shadow: 0 0 8px #ff3b30;
+}
+
+@keyframes statusPulse {
+    0% { opacity: 0.5; transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1.1); }
+}

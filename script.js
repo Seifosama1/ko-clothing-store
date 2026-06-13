@@ -305,6 +305,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.id === currentActiveProductId && item.size === size && (!item.color || item.color === selectedColor)
         );
         const qtyInCart = matchingCartItem ? matchingCartItem.quantity : 0;
+        const availableNow = Math.max(0, maxAvailable - qtyInCart);
+
+        const stockStatusEl = document.getElementById('modalStockStatus');
 
         if (maxAvailable <= 0 || qtyInCart >= maxAvailable) {
             orderBtn.textContent = 'Out of Stock';
@@ -312,12 +315,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             orderBtn.style.color = '#888';
             orderBtn.style.cursor = 'not-allowed';
             orderBtn.disabled = true;
+
+            if (stockStatusEl) {
+                stockStatusEl.innerHTML = `<span class="status-dot red"></span> Out of Stock`;
+            }
         } else {
             orderBtn.textContent = 'Add To Cart';
             orderBtn.style.backgroundColor = '';
             orderBtn.style.color = '';
             orderBtn.style.cursor = 'pointer';
             orderBtn.disabled = false;
+
+            if (stockStatusEl) {
+                if (availableNow <= 3) {
+                    stockStatusEl.innerHTML = `<span class="status-dot yellow"></span> Running Low! Only ${availableNow} left`;
+                } else {
+                    stockStatusEl.innerHTML = `<span class="status-dot green"></span> In Stock (${availableNow} available)`;
+                }
+            }
         }
     };
 
@@ -377,6 +392,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     closeBtn.addEventListener('click', closeModal);
     window.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
+    // ── Flying Cart Micro-Interaction ──
+    function animateFlyToCart() {
+        const modalImg = document.getElementById('modalImg');
+        const cartIcon = document.getElementById('cartIcon');
+        if (!modalImg || !cartIcon) return;
+
+        const imgRect = modalImg.getBoundingClientRect();
+        const cartRect = cartIcon.getBoundingClientRect();
+
+        const clone = document.createElement('img');
+        clone.src = modalImg.src;
+        clone.className = 'flying-item';
+        clone.style.position = 'fixed';
+        clone.style.left = `${imgRect.left}px`;
+        clone.style.top = `${imgRect.top}px`;
+        clone.style.width = `${imgRect.width}px`;
+        clone.style.height = `${imgRect.height}px`;
+        document.body.appendChild(clone);
+
+        // Force reflow
+        clone.offsetWidth;
+
+        clone.style.transform = `translate(${cartRect.left - imgRect.left + (cartRect.width / 2) - 20}px, ${cartRect.top - imgRect.top + (cartRect.height / 2) - 20}px) scale(0.1)`;
+        clone.style.opacity = '0.3';
+        clone.style.width = '40px';
+        clone.style.height = '40px';
+
+        setTimeout(() => {
+            clone.remove();
+            cartIcon.classList.remove('cart-icon-pulse');
+            void cartIcon.offsetWidth;
+            cartIcon.classList.add('cart-icon-pulse');
+        }, 850);
+    }
+
     // ── Add to Cart ──
     orderBtn.addEventListener('click', () => {
         const name         = modalName.textContent;
@@ -395,9 +445,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             cart.push({ id: currentActiveProductId, name, price: numericPrice, img, size, color, quantity: 1 });
         }
 
-        closeModal();
-        updateCartUI();
-        cartSidebar.classList.add('open');
+        animateFlyToCart();
+
+        setTimeout(() => {
+            closeModal();
+            updateCartUI();
+            cartSidebar.classList.add('open');
+        }, 550);
     });
 
     // ── Cart UI ──
