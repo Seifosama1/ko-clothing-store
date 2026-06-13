@@ -2860,3 +2860,36 @@ body.light-mode .admin-status-select {
     color: #000;
     border-color: #ccc;
 }
+
+/* Mobile Navbar Optimization */
+@media (max-width: 600px) {
+    header {
+        padding: 10px 12px;
+    }
+    .logo {
+        font-size: 1.5rem;
+    }
+    .nav-links-right {
+        gap: 12px;
+        /* Allow horizontal scrolling on very tiny screens instead of overlapping */
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+        max-width: calc(100vw - 80px); /* Leave room for logo */
+    }
+    .nav-links-right::-webkit-scrollbar {
+        display: none; /* Hide scrollbar for sleek look */
+    }
+    .nav-links-right a {
+        font-size: 0.85rem;
+    }
+    .cart-icon-container {
+        font-size: 1.1rem;
+    }
+    .theme-toggle-btn {
+        width: 20px;
+        height: 20px;
+    }
+}
