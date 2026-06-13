@@ -225,6 +225,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     ownerInventory = await dbLoadInventory();
 
+    // ── Supabase Realtime Subscription ──
+    const setupRealtimeSubscription = () => {
+        sb.channel('db-inventory-changes')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'inventory' },
+                (payload) => {
+                    console.log('[Realtime] Inventory change detected:', payload);
+                    const row = payload.new;
+                    if (row && row.product_id) {
+                        const key = row.color
+                            ? `${row.product_id}_${row.size}_${row.color}`
+                            : `${row.product_id}_${row.size}`;
+                        ownerInventory[key] = row.quantity;
+                        
+                        // If the modal is currently open and displays the updated product, update the stock UI live!
+                        if (modal && modal.style.display === 'flex' && currentActiveProductId === row.product_id) {
+                            checkCurrentVariantStock();
+                        }
+
+                        // If admin is logged in and needs the updated stock input refreshed
+                        if (typeof readCurrentStockToInput === 'function') {
+                            readCurrentStockToInput();
+                        }
+                    }
+                }
+            )
+            .subscribe();
+    };
+    setupRealtimeSubscription();
+
     // ── Size config ──
     const sizesConfig = {
         shirt: ['XS', 'S', 'M', 'L', 'XL'],
@@ -293,11 +324,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     cartIcon.addEventListener('click', () => cartSidebar.classList.add('open'));
     closeCartBtn.addEventListener('click', () => cartSidebar.classList.remove('open'));
 
+    const stockStatusContainer = document.getElementById('modalStockStatus');
+
     // ── Variant Stock Checker ──
     const checkCurrentVariantStock = () => {
         const size = sizeSelect.value;
+        if (!size) {
+            if (stockStatusContainer) stockStatusContainer.style.display = 'none';
+            return;
+        }
         let variantKey = `${currentActiveProductId}_${size}`;
-        if (colorSection.style.display === 'block' && selectedColor) {
+        if (colorSection && colorSection.style.display === 'block' && selectedColor) {
             variantKey += `_${selectedColor}`;
         }
         const maxAvailable = ownerInventory[variantKey] !== undefined ? ownerInventory[variantKey] : 0;
@@ -305,9 +342,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.id === currentActiveProductId && item.size === size && (!item.color || item.color === selectedColor)
         );
         const qtyInCart = matchingCartItem ? matchingCartItem.quantity : 0;
-        const availableNow = Math.max(0, maxAvailable - qtyInCart);
 
-        const stockStatusEl = document.getElementById('modalStockStatus');
+        // Render premium stock status badge
+        if (stockStatusContainer) {
+            stockStatusContainer.style.display = 'block';
+            if (maxAvailable <= 0) {
+                stockStatusContainer.innerHTML = `
+                    <div class="stock-status-badge">
+                        <span class="status-dot out-of-stock"></span>
+                        <span>Out of Stock</span>
+                    </div>
+                `;
+            } else if (maxAvailable <= 5) {
+                stockStatusContainer.innerHTML = `
+                    <div class="stock-status-badge">
+                        <span class="status-dot low-stock"></span>
+                        <span>Only ${maxAvailable} left (Low Stock)</span>
+                    </div>
+                `;
+            } else {
+                stockStatusContainer.innerHTML = `
+                    <div class="stock-status-badge">
+                        <span class="status-dot in-stock"></span>
+                        <span>In Stock (${maxAvailable} available)</span>
+                    </div>
+                `;
+            }
+        }
 
         if (maxAvailable <= 0 || qtyInCart >= maxAvailable) {
             orderBtn.textContent = 'Out of Stock';
@@ -315,24 +376,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             orderBtn.style.color = '#888';
             orderBtn.style.cursor = 'not-allowed';
             orderBtn.disabled = true;
-
-            if (stockStatusEl) {
-                stockStatusEl.innerHTML = `<span class="status-dot red"></span> Out of Stock`;
-            }
         } else {
             orderBtn.textContent = 'Add To Cart';
             orderBtn.style.backgroundColor = '';
             orderBtn.style.color = '';
             orderBtn.style.cursor = 'pointer';
             orderBtn.disabled = false;
-
-            if (stockStatusEl) {
-                if (availableNow <= 3) {
-                    stockStatusEl.innerHTML = `<span class="status-dot yellow"></span> Running Low! Only ${availableNow} left`;
-                } else {
-                    stockStatusEl.innerHTML = `<span class="status-dot green"></span> In Stock (${availableNow} available)`;
-                }
-            }
         }
     };
 
@@ -351,7 +400,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ── Modal Binding ──
-    const bindProductToModal = (card) => {
+    const bindProductToModal = async (card) => {
         currentActiveProductId = card.getAttribute('data-id');
         currentProductType     = card.getAttribute('data-type');
         const name     = card.getAttribute('data-name');
@@ -382,6 +431,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             sizeSelect.appendChild(option);
         });
 
+        // Fetch fresh inventory for this specific product to ensure live accuracy on modal open
+        try {
+            const { data, error } = await sb.from('inventory').select('*').eq('product_id', currentActiveProductId);
+            if (!error && data) {
+                data.forEach(row => {
+                    const key = row.color
+                        ? `${row.product_id}_${row.size}_${row.color}`
+                        : `${row.product_id}_${row.size}`;
+                    ownerInventory[key] = row.quantity;
+                });
+            }
+        } catch (e) {
+            console.error('[DB] Failed to fetch product inventory on open:', e);
+        }
+
         checkCurrentVariantStock();
         modal.style.display = 'flex';
     };
@@ -391,41 +455,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const closeModal = () => { modal.style.display = 'none'; };
     closeBtn.addEventListener('click', closeModal);
     window.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-
-    // ── Flying Cart Micro-Interaction ──
-    function animateFlyToCart() {
-        const modalImg = document.getElementById('modalImg');
-        const cartIcon = document.getElementById('cartIcon');
-        if (!modalImg || !cartIcon) return;
-
-        const imgRect = modalImg.getBoundingClientRect();
-        const cartRect = cartIcon.getBoundingClientRect();
-
-        const clone = document.createElement('img');
-        clone.src = modalImg.src;
-        clone.className = 'flying-item';
-        clone.style.position = 'fixed';
-        clone.style.left = `${imgRect.left}px`;
-        clone.style.top = `${imgRect.top}px`;
-        clone.style.width = `${imgRect.width}px`;
-        clone.style.height = `${imgRect.height}px`;
-        document.body.appendChild(clone);
-
-        // Force reflow
-        clone.offsetWidth;
-
-        clone.style.transform = `translate(${cartRect.left - imgRect.left + (cartRect.width / 2) - 20}px, ${cartRect.top - imgRect.top + (cartRect.height / 2) - 20}px) scale(0.1)`;
-        clone.style.opacity = '0.3';
-        clone.style.width = '40px';
-        clone.style.height = '40px';
-
-        setTimeout(() => {
-            clone.remove();
-            cartIcon.classList.remove('cart-icon-pulse');
-            void cartIcon.offsetWidth;
-            cartIcon.classList.add('cart-icon-pulse');
-        }, 850);
-    }
 
     // ── Add to Cart ──
     orderBtn.addEventListener('click', () => {
@@ -445,13 +474,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             cart.push({ id: currentActiveProductId, name, price: numericPrice, img, size, color, quantity: 1 });
         }
 
-        animateFlyToCart();
-
-        setTimeout(() => {
-            closeModal();
-            updateCartUI();
-            cartSidebar.classList.add('open');
-        }, 550);
+        closeModal();
+        updateCartUI();
+        cartSidebar.classList.add('open');
     });
 
     // ── Cart UI ──
@@ -554,7 +579,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
 
         const name    = document.getElementById('custName').value;
-        const phone   = document.getElementById('custPhone').value;
+        const phone   = document.getElementById('custPhone').value.trim();
+        
+        // Egyptian phone number validation: starts with 010, 011, 012, or 015 and is exactly 11 digits
+        const egPhonePattern = /^01[0125]\d{8}$/;
+        if (!egPhonePattern.test(phone)) {
+            showAlert('error', '✕', 'Please enter a valid Egyptian phone number (e.g. 01012345678)');
+            return;
+        }
+
         const email   = document.getElementById('custEmail').value;
         const address = document.getElementById('custAddress').value;
         const city    = document.getElementById('custCity').value;
